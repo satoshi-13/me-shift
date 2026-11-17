@@ -1,0 +1,2251 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MEシフト管理</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --paper: #F3F5F4;
+      --surface: #FFFFFF;
+      --ink: #1F2933;
+      --muted: #6B7580;
+      --faint: #A3ABB3;
+      --line: #E3E7E4;
+      --line-strong: #C5CCC6;
+      --accent: #0E6B73;
+      --accent-hover: #0A585F;
+      --accent-weak: #E3EFEF;
+      --sun: #C2363B;
+      --sat: #2D5DA8;
+      --rest: #F6F7F9;
+      --shuin: #B7372B;
+      --warn: #B42318;
+      --warn-bg: #FDECEA;
+      --note: #3A4A9E;
+      --name-w: 92px;
+      --sum-w: 34px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      font-family: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif;
+      font-size: 13px; line-height: 1.45; color: var(--ink); background: var(--paper);
+      display: flex; flex-direction: column; height: 100vh;
+      font-variant-numeric: tabular-nums; -webkit-user-select: none; user-select: none;
+    }
+    input, select, textarea { -webkit-user-select: text; user-select: text; }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    [hidden] { display: none !important; }
+
+    /* ---------- 上部 ---------- */
+    .bar {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      padding: 8px 14px; background: var(--surface); border-bottom: 1px solid var(--line);
+    }
+    h1 { font-size: 14px; margin: 0 4px 0 0; font-weight: 700; letter-spacing: .06em; }
+    .month-nav { display: flex; align-items: center; gap: 4px; }
+    .month-nav input {
+      border: 1px solid var(--line-strong); border-radius: 4px; padding: 3px 6px;
+      font-size: 14px; font-weight: 700; background: var(--surface);
+    }
+    .icon-btn {
+      width: 28px; height: 28px; border: 1px solid var(--line-strong); border-radius: 4px;
+      background: var(--surface); cursor: pointer; font-size: 15px; line-height: 1; padding: 0;
+    }
+    .icon-btn:hover { background: var(--paper); }
+    .text-btn { border: none; background: none; color: var(--accent); cursor: pointer; padding: 4px 6px; font-weight: 700; }
+    .text-btn:hover { text-decoration: underline; }
+    .spacer { flex: 1; }
+    .btn {
+      border-radius: 4px; padding: 6px 12px; font-weight: 700; cursor: pointer;
+      border: 1px solid var(--line-strong); background: var(--surface); white-space: nowrap;
+    }
+    .btn:hover { background: var(--paper); }
+    .btn:disabled { opacity: .45; cursor: default; }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn.primary:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn.small { padding: 4px 9px; font-size: 12px; }
+    .state { font-size: 12px; color: var(--muted); white-space: nowrap; }
+    .state.dirty { color: var(--warn); font-weight: 700; }
+
+    .tools {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      padding: 7px 14px; background: var(--surface); border-bottom: 1px solid var(--line);
+    }
+    .palette { display: flex; align-items: center; gap: 1px; flex-wrap: wrap; }
+    .who {
+      display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 9px; margin-right: 2px;
+      background: var(--accent-weak); color: var(--accent); border-radius: 999px; font-weight: 700; font-size: 12px;
+    }
+    .who button { border: none; background: var(--surface); color: var(--accent); border-radius: 999px; width: 18px; height: 18px; cursor: pointer; padding: 0; line-height: 1; }
+    .sep { width: 1px; height: 18px; background: var(--line-strong); margin: 0 3px; }
+    .stamp {
+      display: inline-flex; align-items: center; gap: 4px; padding: 4px 6px; border-radius: 4px;
+      border: 1px solid transparent; background: none; cursor: pointer; font-size: 12px; font-weight: 700; color: var(--ink);
+    }
+    .stamp:hover { background: var(--paper); }
+    .stamp .sw { width: 10px; height: 10px; border-radius: 2px; background: var(--bg); box-shadow: inset 0 0 0 1px var(--fg); }
+    .stamp .sw.ring { border-radius: 50%; background: none; box-shadow: inset 0 0 0 2px var(--shuin); }
+    .stamp.on { background: var(--accent-weak); border-color: var(--accent); color: var(--accent); }
+    .tools { position: relative; z-index: 10; }
+    .rest-menu { position: relative; display: inline-flex; }
+    .rest-menu .caret { font-size: 9px; color: var(--muted); margin-left: 1px; }
+    .rest-pop {
+      display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 20; min-width: 170px;
+      background: var(--surface); border: 1px solid var(--line-strong); border-radius: 6px;
+      box-shadow: 0 8px 24px rgba(20, 30, 40, .18); padding: 4px;
+    }
+    .rest-menu.open .rest-pop { display: block; }
+    .rest-pop .grp { font-size: 10.5px; color: var(--muted); font-weight: 700; padding: 6px 8px 2px; }
+    .rest-pop .stamp { display: flex; width: 100%; padding: 6px 8px; }
+    .req-toggle {
+      display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 4px;
+      border: 1px solid var(--line-strong); cursor: pointer; font-weight: 700; font-size: 12px; background: var(--surface);
+    }
+    .req-toggle input { accent-color: var(--shuin); margin: 0; }
+    .req-toggle:has(input:checked) { border-color: var(--shuin); color: var(--shuin); background: #FFF6F4; }
+
+    /* ---------- 月表（PC） ---------- */
+    .grid-wrap { flex: 1; overflow: auto; padding: 10px 14px 14px; }
+    table.grid {
+      width: 100%; min-width: 1060px; table-layout: fixed;
+      border-collapse: separate; border-spacing: 0;
+      background: var(--surface); border: 1px solid var(--line-strong); border-radius: 6px;
+    }
+    .grid th, .grid td { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 0; text-align: center; font-weight: 400; }
+    .grid col.c-name { width: var(--name-w); }
+    .grid col.c-sum { width: var(--sum-w); }
+    .grid thead th { position: sticky; top: 0; z-index: 3; background: var(--surface); height: 38px; border-bottom: 1px solid var(--line-strong); }
+    .grid .name {
+      position: sticky; left: 0; z-index: 2; background: var(--surface);
+      text-align: left; padding: 3px 8px; border-right: 1px solid var(--line-strong);
+      white-space: nowrap; overflow: hidden;
+    }
+    .grid thead .name { z-index: 4; font-size: 11px; color: var(--muted); }
+    .day { cursor: pointer; }
+    .day:hover { background: var(--accent-weak) !important; }
+    .day .n { display: block; font-size: 13px; font-weight: 700; line-height: 1.15; }
+    .day .w { display: block; font-size: 10px; color: var(--muted); line-height: 1.2; }
+    .day.sat .n, .day.sat .w { color: var(--sat); }
+    .day.sun .n, .day.sun .w { color: var(--sun); }
+    .day.today { box-shadow: inset 0 -3px 0 var(--accent); }
+    .day.override .w::after { content: "診"; color: var(--accent); margin-left: 1px; }
+    .grid .rest { background: var(--rest); }
+    .sum-h { font-size: 10px; color: var(--muted); line-height: 1.2; }
+
+    .group th, .group td { background: var(--paper); height: 18px; border-bottom-color: var(--line-strong); }
+    .group .name { background: var(--paper); font-size: 10.5px; color: var(--muted); font-weight: 700; padding: 0 8px; }
+
+    .staff-name { cursor: pointer; }
+    .staff-name:hover { background: #F8FAF9; }
+    .staff-name.sel { background: var(--accent-weak); box-shadow: inset 3px 0 0 var(--accent); }
+    .staff-name .nm { font-weight: 700; font-size: 12.5px; line-height: 1.2; }
+    .staff-name .tm { font-size: 10px; color: var(--muted); line-height: 1.2; }
+    .staff-name .tag, .count .tag { font-size: 9.5px; color: var(--faint); font-weight: 400; margin-left: 3px; }
+
+    .cell { height: 34px; position: relative; cursor: pointer; vertical-align: middle; overflow: hidden; }
+    .cell:hover { box-shadow: inset 0 0 0 2px var(--accent); }
+    .cell .l { display: block; font-size: 11px; font-weight: 700; line-height: 1.2; white-space: nowrap; overflow: hidden; }
+    .cell .nt { display: block; font-size: 8.5px; color: var(--note); line-height: 1.15; white-space: nowrap; overflow: hidden; padding: 0 1px; }
+    .cell .ring { display: block; width: 16px; height: 16px; margin: 0 auto; border: 2px solid var(--shuin); border-radius: 50%; transform: rotate(-8deg); }
+    .cell .x { position: absolute; top: 0; right: 2px; color: var(--shuin); font-weight: 700; font-size: 10px; line-height: 1; }
+    .cell.cc { background: #FDF3F8; }
+    .cell.cc .l { color: #9D174D; font-weight: 400; font-size: 10px; text-align: left; padding-left: 3px; overflow: visible; }
+    .total { font-size: 11.5px; font-weight: 700; color: var(--muted); }
+
+    .count th, .count td { height: 22px; font-size: 11px; color: var(--muted); }
+    .count.first th, .count.first td { border-top: 1px solid var(--line-strong); }
+    .count .name { font-size: 10.5px; }
+    .count td.low { color: var(--warn); font-weight: 700; background: var(--warn-bg); }
+    .ev-row td { height: 30px; cursor: pointer; vertical-align: top; }
+    .ev-row td:hover { box-shadow: inset 0 0 0 2px var(--accent); }
+    .ev-row .ev {
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+      font-size: 9px; line-height: 1.25; padding: 2px 1px; text-align: left; color: #7A5300; word-break: break-all;
+    }
+    .loading { padding: 40px; color: var(--muted); text-align: center; }
+
+    /* ---------- スマホ ---------- */
+    .m-wrap { flex: 1; overflow: auto; padding-bottom: 20px; }
+    .m-tabs { display: flex; gap: 4px; padding: 8px 12px 0; }
+    .m-tab.input { flex: 0 0 auto; padding: 7px 12px; border-color: var(--accent); color: var(--accent); }
+    .m-tab.input.on { background: var(--accent); color: #fff; }
+    .m-hint { margin: 8px 12px 0; padding: 8px 10px; border-radius: 6px; background: var(--accent-weak); color: var(--accent); font-size: 12px; font-weight: 700; }
+    .m-hint small { display: block; font-weight: 400; color: var(--muted); margin-top: 2px; }
+    body.stamping .m-wrap { padding-bottom: 150px; }
+    .m-stampbar {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--surface);
+      border-top: 1px solid var(--line-strong); box-shadow: 0 -6px 20px rgba(20, 30, 40, .12);
+      padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+    }
+    .msb-label { font-size: 10.5px; color: var(--muted); font-weight: 700; margin: 0 2px 4px; }
+    .msb-row { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; -webkit-overflow-scrolling: touch; }
+    .msb-row::-webkit-scrollbar { display: none; }
+    .msb-row .stamp { flex: 0 0 auto; border: 1px solid var(--line-strong); padding: 9px 12px; font-size: 13px; background: var(--surface); }
+    .msb-row .stamp.on { border-color: var(--accent); }
+    .msb-row .gap { flex: 0 0 1px; background: var(--line-strong); margin: 4px 2px; }
+    .msb-ctrl { display: flex; gap: 8px; align-items: center; }
+    .msb-ctrl .req-toggle { padding: 8px 10px; font-size: 13px; }
+    .msb-ctrl .btn { padding: 8px 12px; }
+    .m-row.tapped, .cal .cd.tapped { animation: tap .35s ease-out; }
+    @keyframes tap { from { box-shadow: inset 0 0 0 3px var(--accent); } to { box-shadow: inset 0 0 0 0 var(--accent); } }
+    @media (prefers-reduced-motion: reduce) { .m-row.tapped, .cal .cd.tapped { animation: none; } }
+    .m-tab { flex: 1; border: 1px solid var(--line-strong); background: var(--surface); padding: 7px; border-radius: 6px; font-weight: 700; cursor: pointer; }
+    .m-tab.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .strip { display: flex; gap: 4px; overflow-x: auto; padding: 10px 12px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+    .strip::-webkit-scrollbar { display: none; }
+    .d-chip {
+      flex: 0 0 44px; height: 52px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; scroll-snap-align: center;
+    }
+    .d-chip b { font-size: 15px; line-height: 1.1; }
+    .d-chip span { font-size: 10px; color: var(--muted); }
+    .d-chip.rest { background: var(--rest); }
+    .d-chip.sat b, .d-chip.sat span { color: var(--sat); }
+    .d-chip.sun b, .d-chip.sun span { color: var(--sun); }
+    .d-chip.on { background: var(--accent); border-color: var(--accent); }
+    .d-chip.on b, .d-chip.on span { color: #fff; }
+    .d-chip.today:not(.on) { border-color: var(--accent); }
+    .m-sec { margin: 0 12px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    .m-head { padding: 10px 12px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+    .m-head h2 { font-size: 15px; margin: 0; }
+    .m-head .sub { font-size: 12px; color: var(--muted); }
+    .m-cover { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); }
+    .m-cover div { padding: 6px 4px; text-align: center; font-size: 10.5px; color: var(--muted); border-right: 1px solid var(--line); }
+    .m-cover div:last-child { border-right: none; }
+    .m-cover b { display: block; font-size: 16px; color: var(--ink); }
+    .m-cover .low b { color: var(--warn); }
+    .m-event { padding: 8px 12px; border-top: 1px solid var(--line); font-size: 12px; color: #7A5300; background: #FFFBEF; cursor: pointer; }
+    .m-group { padding: 5px 12px; font-size: 11px; font-weight: 700; color: var(--muted); background: var(--paper); border-top: 1px solid var(--line); }
+    .m-row {
+      display: grid; grid-template-columns: 64px 1fr auto; align-items: center; gap: 8px;
+      padding: 9px 12px; border-top: 1px solid var(--line); cursor: pointer; min-height: 46px;
+    }
+    .m-row:active { background: var(--accent-weak); }
+    .m-row, .cal .cd, .grid .cell { touch-action: manipulation; }
+    .m-row .nm { font-weight: 700; }
+    .m-row .what { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .m-row .badge { font-weight: 700; font-size: 12px; padding: 2px 7px; border-radius: 4px; }
+    .m-row .time { font-size: 12px; color: var(--muted); }
+    .m-row .note { font-size: 11.5px; color: var(--note); width: 100%; }
+    .m-row .x { color: var(--shuin); font-weight: 700; }
+    .m-row .ring { width: 14px; height: 14px; border: 2px solid var(--shuin); border-radius: 50%; display: inline-block; }
+    .m-row.off .nm { color: var(--muted); }
+
+    .p-staff { display: flex; gap: 6px; overflow-x: auto; padding: 10px 12px; }
+    .p-staff::-webkit-scrollbar { display: none; }
+    .p-chip { flex: 0 0 auto; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface); font-weight: 700; cursor: pointer; }
+    .p-chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .cal { display: grid; grid-template-columns: repeat(7, 1fr); }
+    .cal .wk { text-align: center; font-size: 11px; color: var(--muted); padding: 5px 0; border-top: 1px solid var(--line); }
+    .cal .wk.sun { color: var(--sun); } .cal .wk.sat { color: var(--sat); }
+    .cal .cd {
+      min-height: 58px; border-top: 1px solid var(--line); border-right: 1px solid var(--line);
+      padding: 3px 2px; text-align: center; cursor: pointer; position: relative;
+    }
+    .cal .cd:nth-child(7n) { border-right: none; }
+    .cal .cd.blank { cursor: default; background: var(--paper); }
+    .cal .cd.rest { background: var(--rest); }
+    .cal .cd .dn { font-size: 11px; color: var(--muted); display: block; text-align: left; padding-left: 2px; }
+    .cal .cd.sun .dn { color: var(--sun); } .cal .cd.sat .dn { color: var(--sat); }
+    .cal .cd.today .dn { color: var(--accent); font-weight: 700; }
+    .cal .cd .l { display: inline-block; font-size: 11.5px; font-weight: 700; margin-top: 3px; padding: 1px 4px; border-radius: 3px; }
+    .cal .cd .ring { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--shuin); border-radius: 50%; margin-top: 4px; }
+    .cal .cd .x { position: absolute; top: 2px; right: 3px; color: var(--shuin); font-weight: 700; font-size: 11px; }
+    .cal .cd .nd { position: absolute; bottom: 3px; left: 50%; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--note); }
+    .p-sum { display: flex; gap: 16px; padding: 10px 12px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+    .p-sum b { color: var(--ink); font-size: 15px; }
+
+    /* ---------- 休みのアコーディオン ---------- */
+    details.offs { border-top: 1px solid var(--line); }
+    details.offs > summary {
+      list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px;
+      padding: 9px 12px; font-size: 12px; font-weight: 700; color: var(--muted); background: var(--paper);
+    }
+    details.offs > summary::-webkit-details-marker { display: none; }
+    details.offs > summary::before { content: "▸"; font-size: 11px; transition: transform .15s; }
+    details.offs[open] > summary::before { transform: rotate(90deg); }
+    details.offs > summary .names { font-weight: 400; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+    details.offs[open] > summary .names { visibility: hidden; }
+    .dlg-body details.offs { border: 1px solid var(--line); border-radius: 6px; margin-top: 10px; overflow: hidden; }
+    .dlg-body details.offs table.list td { color: var(--muted); }
+
+    /* ---------- 表示する人・CSV ---------- */
+    .btn.filtering { border-color: var(--accent); color: var(--accent); background: var(--accent-weak); }
+    .quick { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+    .pick-group { font-size: 11px; font-weight: 700; color: var(--muted); margin: 10px 0 4px; }
+    .pick-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
+    .pick {
+      display: flex; align-items: center; gap: 8px; padding: 7px 9px; border: 1px solid var(--line);
+      border-radius: 5px; cursor: pointer; font-weight: 700;
+    }
+    .pick:has(input:checked) { border-color: var(--accent); background: var(--accent-weak); }
+    .pick input { accent-color: var(--accent); margin: 0; width: 16px; height: 16px; }
+    .pick small { color: var(--muted); font-weight: 400; margin-left: auto; font-size: 10.5px; }
+    .radio-set { display: flex; flex-direction: column; gap: 6px; }
+    .radio-set label { display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border: 1px solid var(--line); border-radius: 5px; cursor: pointer; }
+    .radio-set label:has(input:checked) { border-color: var(--accent); background: var(--accent-weak); }
+    .radio-set input { accent-color: var(--accent); margin-top: 3px; }
+    .radio-set b { display: block; font-size: 12.5px; }
+    .radio-set span { font-size: 11.5px; color: var(--muted); }
+    .filter-note { font-size: 11px; color: var(--accent); }
+
+    /* ---------- 閲覧／管理者 ---------- */
+    body:not(.is-admin) .admin-only { display: none !important; }
+    body:not(.is-admin) .grid .cell, body:not(.is-admin) .ev-row td { cursor: default; }
+    body:not(.is-admin) .grid .cell:hover, body:not(.is-admin) .ev-row td:hover { box-shadow: none; }
+    body:not(.is-admin) .staff-name { cursor: default; }
+    .mode-badge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--paper); color: var(--muted); white-space: nowrap; }
+    body.is-admin .mode-badge { background: #FFF1E6; color: #9A4A10; }
+    .btn.pub-on { color: var(--accent); border-color: var(--accent); }
+    .btn.pub-off { color: #9A4A10; border-color: #E2A36B; background: #FFF6EE; }
+    .notice {
+      margin: 10px 14px 0; padding: 9px 12px; border-radius: 6px; font-size: 12.5px;
+      background: #FFF6EE; color: #7A3B0A; border: 1px solid #F1C9A5; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .closed { margin: 40px auto; max-width: 420px; text-align: center; color: var(--muted); line-height: 1.8; padding: 0 16px; }
+    .closed b { display: block; color: var(--ink); font-size: 16px; margin-bottom: 4px; }
+    .grid .cell.auto::after {
+      content: ""; position: absolute; left: 2px; bottom: 2px; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); opacity: .7;
+    }
+    body:not(.is-admin) .grid .cell.auto::after { display: none; }
+
+    /* ---------- 自動割り振り ---------- */
+    .auto-roles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .auto-card { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+    .auto-card.off { opacity: .5; }
+    .auto-card h3 { margin: 0 0 8px; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+    .auto-card h3 input { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; }
+    .auto-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 0; font-size: 12.5px; }
+    .auto-row .unit { color: var(--muted); font-size: 11.5px; margin-left: 4px; }
+    .auto-row input { width: 64px; text-align: right; border: 1px solid var(--line-strong); border-radius: 4px; padding: 5px 7px; font-size: 14px; }
+    .auto-opt { display: flex; align-items: center; gap: 8px; font-size: 12.5px; margin: 4px 0 10px; }
+    .auto-opt input { accent-color: var(--accent); }
+    .auto-result h4 { font-size: 12.5px; margin: 12px 0 4px; }
+    .auto-result table.list td.num, .auto-result table.list th.num { text-align: right; }
+    .auto-result .unmet { color: var(--warn); font-weight: 700; }
+    .auto-result .warns { margin: 10px 0 0; padding: 8px 10px; border-radius: 6px; background: var(--warn-bg); color: var(--warn); font-size: 12px; line-height: 1.7; }
+    .auto-result .ok { margin: 10px 0 0; padding: 8px 10px; border-radius: 6px; background: var(--accent-weak); color: var(--accent); font-size: 12px; }
+    @media (max-width: 760px) { .auto-roles { grid-template-columns: 1fr; } }
+
+    /* ---------- 業務 ---------- */
+    .seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 6px; overflow: hidden; margin-right: 6px; }
+    .seg button { border: none; background: var(--surface); padding: 5px 12px; font-weight: 700; font-size: 12px; cursor: pointer; color: var(--muted); }
+    .seg button.on { background: var(--accent); color: #fff; }
+    body.task-mode .shift-only { display: none !important; }
+    body:not(.task-mode) .task-only { display: none !important; }
+    .tk { display: inline-block; min-width: 13px; padding: 0 2px; margin: 0 1px 0 0; border-radius: 3px; color: #fff; font-size: 10px; font-weight: 700; line-height: 15px; text-align: center; }
+    .grid .cell .tk:last-child { margin-right: 0; }
+    .m-tasks .tk, table.list .tk, .m-row .tk { min-width: 16px; font-size: 11px; line-height: 17px; margin-right: 3px; }
+    .stamp .tk { margin: 0 2px 0 0; }
+    .grid .cell.offday { background: var(--rest); color: var(--faint); cursor: not-allowed; }
+    .grid .cell.offday .l { font-weight: 400; font-size: 10px; }
+    .count td.need { color: var(--muted); }
+    .m-tasks { border-top: 1px solid var(--line); padding: 6px 12px; display: grid; gap: 3px; }
+    .m-tasks div { font-size: 12.5px; display: flex; gap: 6px; align-items: center; }
+    .m-tasks .low { color: var(--warn); font-weight: 700; }
+    .m-row .tks { display: inline-flex; gap: 1px; }
+
+    /* ---------- ログイン（GitHub版） ---------- */
+    .login-view { position: fixed; inset: 0; z-index: 200; background: var(--paper); display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .login-view[hidden] { display: none; }
+    .login-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 24px; width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 12px; }
+    .login-card h2 { margin: 0; font-size: 17px; }
+    .login-card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
+    .login-card input { font-size: 24px; letter-spacing: .4em; text-align: center; padding: 10px; border: 1px solid var(--line-strong); border-radius: 8px; }
+    .login-msg { min-height: 20px; color: var(--warn); font-size: 13px; }
+
+    /* ---------- ダイアログ ---------- */
+    dialog { border: none; border-radius: 10px; padding: 0; color: var(--ink); box-shadow: 0 16px 48px rgba(20, 30, 40, .28); max-width: 96vw; }
+    dialog::backdrop { background: rgba(20, 30, 40, .38); }
+    .dlg-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+    .dlg-head h2 { margin: 0; font-size: 15px; }
+    .dlg-head .close { border: none; background: none; font-size: 20px; cursor: pointer; color: var(--muted); line-height: 1; }
+    .dlg-body { padding: 14px 16px; max-height: 70vh; overflow: auto; }
+    .dlg-foot { display: flex; gap: 8px; padding: 10px 16px; border-top: 1px solid var(--line); }
+    .dlg-foot .right { display: flex; gap: 8px; margin-left: auto; }
+    .field { margin-bottom: 12px; }
+    .field > label, .field .lbl { display: block; font-size: 12px; font-weight: 700; margin-bottom: 5px; }
+    .field .sub { font-weight: 400; color: var(--muted); }
+    .field input[type=text], .field select, .field textarea { width: 100%; border: 1px solid var(--line-strong); border-radius: 4px; padding: 7px 9px; background: var(--surface); }
+    .field textarea { resize: vertical; min-height: 64px; }
+    .choices { display: flex; flex-wrap: wrap; gap: 5px; }
+    .choice {
+      border: 1px solid var(--line-strong); background: var(--surface); border-radius: 5px; padding: 6px 10px;
+      font-size: 12.5px; font-weight: 700; cursor: pointer; display: inline-flex; flex-direction: column; align-items: flex-start; line-height: 1.2;
+    }
+    .choice small { font-weight: 400; color: var(--muted); font-size: 10.5px; }
+    .choice.on { background: var(--accent-weak); border-color: var(--accent); color: var(--accent); }
+    .check { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--shuin); }
+
+    .preview-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+    .chip { padding: 2px 9px; border-radius: 999px; background: var(--paper); font-size: 12px; }
+    .chip.hol { color: var(--sun); background: #FBF0F0; }
+    .chip.ev { color: #7A5300; background: #FFF6DB; }
+    .cover { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 12px; }
+    .cover div { border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; font-size: 11px; color: var(--muted); }
+    .cover b { display: block; font-size: 17px; color: var(--ink); }
+    .cover .low b { color: var(--warn); }
+    table.list { width: 100%; border-collapse: collapse; font-size: 12px; }
+    table.list th, table.list td { border-bottom: 1px solid var(--line); padding: 5px 6px; text-align: left; }
+    table.list th { color: var(--muted); font-size: 11px; }
+    .off-line { margin-top: 10px; color: var(--muted); font-size: 12px; }
+
+    .staff-table { border-collapse: collapse; font-size: 12px; }
+    .staff-table th { font-size: 11px; color: var(--muted); text-align: left; padding: 4px 4px 6px; white-space: nowrap; }
+    .staff-table td { padding: 3px 4px; border-top: 1px solid var(--line); }
+    .staff-table input, .staff-table select { border: 1px solid var(--line-strong); border-radius: 4px; padding: 5px 6px; background: var(--surface); }
+    .staff-table tr.retired td { background: #F6F6F6; color: var(--faint); }
+    .fx { width: 22px; height: 26px; padding: 0; margin-right: 1px; border: 1px solid var(--line-strong); border-radius: 4px; background: var(--surface); cursor: pointer; font-size: 11.5px; }
+    .fx.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+    .w-name { width: 72px; } .w-pat { width: 104px; } .w-spec { width: 124px; }
+    .help { color: var(--muted); font-size: 12px; margin: 0 0 10px; line-height: 1.7; }
+
+    .toast {
+      position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 20px);
+      background: var(--ink); color: #fff; padding: 9px 16px; border-radius: 6px; font-size: 13px;
+      opacity: 0; pointer-events: none; transition: opacity .18s, transform .18s; z-index: 100; max-width: 90vw;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .toast.error { background: var(--warn); }
+    @media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+
+    @media (max-width: 760px) {
+      .bar { padding: 8px 10px; gap: 6px; }
+      h1, .tools, #openStaff, #helpBtn, #thisMonth, #csvBtn, #autoBtn, #sheetLink { display: none !important; }
+      .notice { margin: 8px 10px 0; }
+      .pick-list { grid-template-columns: 1fr 1fr; }
+      .state { order: 5; width: 100%; }
+      .month-nav input { font-size: 14px; width: 132px; padding: 3px 4px; }
+      #filterBtn { padding: 4px 7px; }
+      .state:empty { display: none; }
+      dialog { width: 100vw; max-width: 100vw; margin: auto 0 0; border-radius: 12px 12px 0 0; }
+      dialog form, dialog > div { width: 100% !important; }
+      .dlg-body { max-height: 66vh; }
+      .cover { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body class="is-admin">
+  <div id="loginView" class="login-view" hidden>
+    <div class="login-card">
+      <h2>MEシフト　ログイン</h2>
+      <p>ダッシュボードと同じ <b>5桁のユーザー番号</b>（在庫管理の番号）を入力してください。シフト管理は管理者の方が利用できます。ログインはその日のうちだけ有効です。</p>
+      <input id="loginId" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="off" aria-label="ユーザー番号">
+      <div id="loginMsg" class="login-msg" role="alert"></div>
+    </div>
+  </div>
+
+  <header class="bar">
+    <h1>MEシフト</h1>
+    <div class="month-nav">
+      <button class="icon-btn" id="prevMonth" aria-label="前の月">‹</button>
+      <input type="month" id="monthPicker" aria-label="表示する月">
+      <button class="icon-btn" id="nextMonth" aria-label="次の月">›</button>
+      <button class="text-btn" id="thisMonth">今月</button>
+    </div>
+    <span class="spacer"></span>
+    <span id="syncState" class="state" hidden></span>
+    <span id="saveState" class="state admin-only"></span>
+    <button class="btn small" id="filterBtn">表示：全員</button>
+    <button class="btn small" id="csvBtn">CSV出力</button>
+    <button class="btn small" id="helpBtn" title="使い方">？</button>
+    <button class="btn small" id="reloadBtn" title="シートで変わった内容を読み込み直します">↻ 最新</button>
+    <a class="btn small" id="sheetLink" target="_blank" rel="noopener" style="text-decoration:none;color:inherit">シートを開く</a>
+    <button class="btn small admin-only" id="autoBtn">自動割り振り</button>
+    <button class="btn small admin-only" id="openStaff">スタッフ設定</button>
+    <button class="btn primary admin-only" id="saveBtn">保存</button>
+    <button class="btn small" id="logoutBtn" title="ログアウト"><span id="userChip"></span> ⏻</button>
+  </header>
+  <div class="notice" id="unknownNotice" hidden></div>
+
+  <section class="tools admin-only" id="tools">
+    <div class="seg" role="tablist"><button data-vmode="shift" class="on">勤務</button><button data-vmode="task">業務</button></div>
+    <div class="palette" id="palette"></div>
+    <span class="spacer"></span>
+    <label class="req-toggle shift-only"><input type="checkbox" id="reqToggle"><span>× 希望休</span></label>
+    <button class="btn small task-only" id="autoTaskBtn" title="必要人数に足りない日に、出勤している人から均等に担当を入れます">業務を自動で割り振る</button>
+    <button class="btn small shift-only" id="fixedBtn" title="スタッフ設定の定休日で、まだ空欄の日を公休にします">定休日を入れる</button>
+    <button class="btn small" id="undoBtn" disabled>元に戻す</button>
+  </section>
+
+  <main class="grid-wrap" id="pcView">
+    <table class="grid" id="grid">
+      <colgroup id="cols"></colgroup>
+      <thead id="thead"></thead>
+      <tbody id="tbody"><tr><td class="loading">読み込み中…</td></tr></tbody>
+    </table>
+  </main>
+
+  <main class="m-wrap" id="mView" hidden>
+    <div class="m-tabs">
+      <button class="m-tab" data-mview="day">日ごと</button>
+      <button class="m-tab" data-mview="person">人ごと</button>
+      <button class="m-tab input admin-only" id="mStampToggle">スタンプ入力</button>
+    </div>
+    <div id="mBody"></div>
+  </main>
+
+  <div class="m-stampbar admin-only" id="mStampBar" hidden>
+    <div class="msb-label" id="msbLabel"></div>
+    <div class="msb-row" id="msbStamps"></div>
+    <div class="msb-ctrl">
+      <label class="req-toggle"><input type="checkbox" id="mReq"><span>× 希望休</span></label>
+      <button class="btn" id="mUndo" disabled>元に戻す</button>
+      <span class="spacer"></span>
+      <button class="btn primary" id="mStampEnd">入力を終える</button>
+    </div>
+  </div>
+
+  <!-- セル詳細 -->
+  <dialog id="cellDlg">
+    <form method="dialog" style="width:430px;max-width:96vw">
+      <div class="dlg-head"><h2 id="cellTitle"></h2><button type="button" class="close" data-close="cellDlg" aria-label="閉じる">×</button></div>
+      <div class="dlg-body">
+        <div class="field"><span class="lbl">勤務</span><div class="choices" id="cellChoices"></div></div>
+        <div class="field">
+          <label for="cellTime">時間を変える <span class="sub">空欄なら選んだ勤務の時間。遅刻・早退は勤務した時間、時間有休は休んだ時間</span></label>
+          <input type="text" id="cellTime" placeholder="09:00-15:00 または 早出:07:30-16:00">
+        </div>
+        <div class="field"><label class="check"><input type="checkbox" id="cellReq"> 希望休</label></div>
+        <div class="field" id="cellTaskField"><span class="lbl">業務 <span class="sub">複数選べます</span></span><div class="choices" id="cellTasks"></div></div>
+        <div class="field"><label for="cellNote">業務メモ</label><input type="text" id="cellNote" placeholder="管理職会議、ワクチンなど"></div>
+      </div>
+      <div class="dlg-foot">
+        <button type="button" class="btn" id="cellClear">空欄に戻す</button>
+        <div class="right">
+          <button type="button" class="btn" data-close="cellDlg">キャンセル</button>
+          <button class="btn primary" value="ok" autofocus>反映する</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 全体予定 -->
+  <dialog id="eventDlg">
+    <form method="dialog" style="width:380px;max-width:96vw">
+      <div class="dlg-head"><h2 id="eventTitle"></h2><button type="button" class="close" data-close="eventDlg" aria-label="閉じる">×</button></div>
+      <div class="dlg-body">
+        <div class="field">
+          <label for="eventText">全体予定 <span class="sub">「診療日」で平日扱い、「休診」で休日扱い</span></label>
+          <textarea id="eventText" placeholder="除細動器動作チェック、診療日など"></textarea>
+        </div>
+      </div>
+      <div class="dlg-foot"><div class="right">
+        <button type="button" class="btn" data-close="eventDlg">キャンセル</button>
+        <button class="btn primary" value="ok">反映する</button>
+      </div></div>
+    </form>
+  </dialog>
+
+  <!-- 日報プレビュー -->
+  <dialog id="dailyDlg">
+    <div style="width:620px;max-width:96vw">
+      <div class="dlg-head"><h2 id="dailyTitle"></h2><button class="close" data-close="dailyDlg" aria-label="閉じる">×</button></div>
+      <div class="dlg-body" id="dailyBody"></div>
+    </div>
+  </dialog>
+
+  <!-- 表示する人 -->
+  <dialog id="filterDlg">
+    <div style="width:400px;max-width:96vw">
+      <div class="dlg-head"><h2>表示する人</h2><button class="close" data-close="filterDlg" aria-label="閉じる">×</button></div>
+      <div class="dlg-body">
+        <div class="quick">
+          <button type="button" class="btn small" data-quick="all">全員</button>
+          <button type="button" class="btn small" data-quick="臨床工学技士">技士だけ</button>
+          <button type="button" class="btn small" data-quick="MEサポーター">サポーターだけ</button>
+          <button type="button" class="btn small" data-quick="none">すべて外す</button>
+        </div>
+        <div id="pickBody"></div>
+        <p class="help" style="margin:12px 0 0">人数の集計は、表示に関係なく全員で数えます。</p>
+      </div>
+      <div class="dlg-foot"><div class="right">
+        <button class="btn" data-close="filterDlg">キャンセル</button>
+        <button class="btn primary" id="applyFilter">この人たちを表示</button>
+      </div></div>
+    </div>
+  </dialog>
+
+  <!-- CSV出力 -->
+  <dialog id="csvDlg">
+    <div style="width:420px;max-width:96vw">
+      <div class="dlg-head"><h2>CSV出力</h2><button class="close" data-close="csvDlg" aria-label="閉じる">×</button></div>
+      <div class="dlg-body">
+        <div class="field"><span class="lbl">形式</span>
+          <div class="radio-set">
+            <label><input type="radio" name="csvKind" value="grid" checked><div><b>勤務表</b><span>画面と同じ並び（1行が1人、列が日付）。人数と全体予定も下に付きます</span></div></label>
+            <label><input type="radio" name="csvKind" value="detail"><div><b>明細</b><span>1人1日1行。開始・終了時刻、メモを列に分けます（集計・Excel加工向け）</span></div></label>
+          </div>
+        </div>
+        <div class="field"><span class="lbl">対象</span>
+          <div class="radio-set">
+            <label><input type="radio" name="csvWho" value="shown" checked><div><b>表示中の人</b><span id="csvShownText"></span></div></label>
+            <label><input type="radio" name="csvWho" value="all"><div><b>全員</b></div></label>
+          </div>
+        </div>
+        <p class="help" style="margin:0">保存していない変更も含めて、いま画面にある内容を出力します。Excelでそのまま開けます。</p>
+      </div>
+      <div class="dlg-foot"><div class="right">
+        <button class="btn" data-close="csvDlg">キャンセル</button>
+        <button class="btn primary" id="doCsv">ダウンロード</button>
+      </div></div>
+    </div>
+  </dialog>
+
+  <!-- 保存できなかったセル -->
+  <dialog id="conflictDlg">
+    <div style="width:460px;max-width:96vw">
+      <div class="dlg-head"><h2>シートの変更を優先しました</h2><button class="close" data-close="conflictDlg" aria-label="閉じる">×</button></div>
+      <div class="dlg-body">
+        <p class="help" style="margin-top:0">アプリで読み込んだ後に、スプレッドシートで同じセルが書き換えられていたため、次のセルはアプリの変更を保存していません。表は最新の内容に読み込み直しました。必要なら入れ直してください。</p>
+        <table class="list"><thead><tr><th>日付</th><th>氏名</th><th>シートの内容</th></tr></thead><tbody id="conflictBody"></tbody></table>
+      </div>
+      <div class="dlg-foot"><div class="right"><button class="btn primary" data-close="conflictDlg">わかりました</button></div></div>
+    </div>
+  </dialog>
+
+  <!-- 自動割り振り -->
+  <dialog id="autoDlg">
+    <div style="width:680px;max-width:96vw">
+      <div class="dlg-head"><h2 id="autoTitle">自動割り振り</h2><button class="close" data-close="autoDlg" aria-label="閉じる">×</button></div>
+      <div class="dlg-body">
+        <p class="help">希望休や、手で入れた勤務・休みはそのままにして、空いている日に公休と有休を割り振ります。人数は午前・午後のどちらも最低人数以上になるようにし、公休は休日から、有休は平日から、できるだけ均等に入れます。</p>
+        <div class="auto-roles" id="autoForm"></div>
+        <label class="auto-opt"><input type="checkbox" id="autoFixed" checked> 定休日（スタッフ設定）を先に公休で入れる</label>
+        <label class="auto-opt"><input type="checkbox" id="autoRedo" checked> 前回の自動割り振りを消してからやり直す（手で入れたものは消えません）</label>
+        <div class="auto-result" id="autoResult"></div>
+      </div>
+      <div class="dlg-foot">
+        <button class="btn" id="autoSaveCfg">設定だけ保存</button>
+        <div class="right">
+          <button class="btn" data-close="autoDlg">キャンセル</button>
+          <button class="btn" id="autoCalc">計算する</button>
+          <button class="btn primary" id="autoApply" hidden>表に反映する</button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- 使い方 -->
+  <dialog id="helpDlg">
+    <div style="width:440px;max-width:96vw">
+      <div class="dlg-head"><h2>使い方</h2><button class="close" data-close="helpDlg" aria-label="閉じる">×</button></div>
+      <div class="dlg-body">
+        <p class="help">
+          このアプリとスプレッドシートの勤務表（「2026年11月」などのシート）は同じものです。どちらで入力しても反映されます。<br>
+          スタッフがシートで入力した内容は「↻ 最新」で読み込めます（変更がなければ、画面に戻ったときにも自動で読み込みます）。<br>
+          セルをクリックすると、選んでいるスタンプが入ります。<br>
+          同じセルをダブルクリックすると空欄（通常の日勤）に戻ります。<br>
+          休みは「休み▾」を押すと、終日（公休・有休・特休・欠勤・育休）、半日（AM公休・PM公休・AM有休・PM有休）、時間（時間有休・遅刻・早退）から選べます。<br>
+          遅刻・早退は右クリックで「勤務した時間」、時間有休は「休んだ時間」を入れると、午前・午後の人数に反映されます。<br>
+          スタッフ設定の「定休日」に曜日・祝を設定すると、「定休日を入れる」や自動割り振りで、その日が公休になります。<br>
+          右クリックで、時間の変更・希望休・業務メモを入力できます。<br>
+          名前をクリックすると、その人の勤務パターンがスタンプに並びます。<br>
+          日付をクリックすると、日報に渡す内容を確認できます。<br>
+          一番下の行をクリックすると、全体予定を入力できます。<br>
+          Ctrl+Z で元に戻す、Ctrl+S で保存します。<br>
+          空欄は通常の日勤です。〇は特別業務、右上の×は希望休です。<br>
+          「自動割り振り」で、空いている日に公休・有休を均等に入れられます（反映後に保存が必要です）。<br>
+          保存は変更したセルだけを書き込みます。読み込んだ後にシートで同じセルが変えられていた場合は、シートの内容を優先してお知らせします。<br>
+          シートで読み取れない文字（例：「研修」）は赤字で表示し、そのまま残します。<br>
+          「業務」に切り替えると、A業務・B業務などの担当を入れられます。業務を選んでセルを押すと付け外しでき、1人に複数の業務を付けられます。右クリックの詳細画面からも選べます。業務の種類・必要人数はシートの「業務マスタ」で変えられます。<br>
+          「表示」で見たい人だけに絞れます（複数選択可）。「CSV出力」で勤務表か明細をダウンロードできます。
+        </p>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- スタッフ設定 -->
+  <dialog id="staffDlg">
+    <div style="width:1260px;max-width:98vw">
+      <div class="dlg-head"><h2>スタッフ設定</h2><button class="close" data-close="staffDlg" aria-label="閉じる">×</button></div>
+      <div class="dlg-body">
+        <p class="help">パターンは「名前:開始-終了」で入力します（例　早出:07:30-16:00）。表ではパターン名の先頭2文字が表示されます。〇特別業務も同じ形式です（例　病棟回収:08:30-16:30）。退職にした人は、シフトが入っていない月には表示されません。</p>
+        <table class="staff-table">
+          <thead><tr><th>氏名</th><th>職種</th><th>〇特別業務</th><th>パターンA（通常）</th><th>パターンB</th><th>パターンC</th><th>パターンD</th><th>土日祝の時間</th><th>定休日</th><th>状態</th><th>並び</th></tr></thead>
+          <tbody id="staffBody"></tbody>
+        </table>
+      </div>
+      <div class="dlg-foot">
+        <button class="btn" id="addStaff">スタッフを追加</button>
+        <div class="right">
+          <button class="btn" data-close="staffDlg">閉じる</button>
+          <button class="btn primary" id="saveStaff">設定を保存</button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    /* ===== 設定（GitHub版） =====
+     * SHIFT_API：MEシフトの「アクセス：全員」で公開したウェブアプリURL（…/exec）
+     * DASH_API ：ME業務ダッシュボードの集約用GASのURL（ログインに使う）
+     * ログインはダッシュボードと共通（在庫管理の5桁のユーザー番号・管理者のみ）。同じ github.io なので、ダッシュボードでログインしていればそのまま使える */
+    const SHIFT_API = 'https://script.google.com/macros/s/AKfycby0GaAZgGuC-fDbhU-_9fLzelLZP3rVNS6HjgSxvk0dsCfB4Rr6bqb44CZr89hag1ejsw/exec';
+    const DASH_API = 'https://script.google.com/macros/s/AKfycbwH4qejeiP6ShZtMjhiV9EGnJSBQxq2xxmyt4oFinl_rbnw8GkjtFZUOjv8VFJE7J8I/exec';
+
+    const dayStr = () => { const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`; };
+    function loadDashAuth() { try { const a = JSON.parse(localStorage.getItem('medash_auth') || 'null'); return a && a.day === dayStr() && a.role === '管理者' ? a : null; } catch (e) { return null; } }
+    let AUTH = '';
+    let USER = loadDashAuth();
+    (() => {
+      // ダッシュボードの「シフト管理」から #t=… 付きで開いたとき
+      const m = location.hash.match(/[#&]t=([^&]+)/);
+      if (m) { AUTH = decodeURIComponent(m[1]); window.history.replaceState(null, '', location.pathname + location.search); }
+      if (!AUTH && USER) AUTH = USER.token;
+    })();
+
+    /* google.script.run の代わり：MEシフトのGASにPOSTで送る（画面のコードはそのまま使える） */
+    window.google = { script: { get run() { return runner(); } } };
+    function runner() {
+      const st = { ok: null, ng: null };
+      const p = new Proxy({}, { get(_, k) {
+        if (k === 'withSuccessHandler') return f => { st.ok = f; return p; };
+        if (k === 'withFailureHandler') return f => { st.ng = f; return p; };
+        return (...args) => {
+          if (!AUTH) { showLogin(''); const e = new Error('ログインしてください'); e.auth = true; e.silent = true; st.ng && st.ng(e); return; }
+          fetch(SHIFT_API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'app', fn: k, args }) })
+            .then(r => r.json())
+            .then(j => {
+              if (j.ok) { st.ok && st.ok(j.data); return; }
+              const e = new Error(j.error || '処理できませんでした'); e.auth = j.auth;
+              if (j.auth) showLogin('ログインの有効期限が切れたか、管理者ではありません。もう一度ログインしてください');
+              st.ng && st.ng(e);
+            })
+            .catch(err => { st.ng && st.ng(new Error(err.message === 'Failed to fetch' ? '通信できませんでした。電波を確認してください' : err.message)); });
+        };
+      } });
+      return p;
+    }
+    function onAuthError(err) { if (err && err.auth && !err.silent) showLogin('もう一度ログインしてください'); }
+
+    /* ---------- ログイン（ダッシュボードと共通） ---------- */
+    function showLogin(msg) {
+      const el = document.getElementById('loginView');
+      if (!el) return;
+      el.hidden = false;
+      document.getElementById('loginMsg').textContent = msg || '';
+      const i = document.getElementById('loginId'); i.value = ''; setTimeout(() => i.focus(), 50);
+    }
+    async function doLogin(id) {
+      const msg = document.getElementById('loginMsg');
+      msg.textContent = '確認しています…';
+      try {
+        const r = await fetch(DASH_API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'login', loginId: id }) });
+        const j = await r.json();
+        if (!j.ok) throw new Error(j.error || 'ログインできませんでした');
+        if (j.data.role !== '管理者') throw new Error('シフト管理は管理者のみ利用できます');
+        try { localStorage.setItem('medash_auth', JSON.stringify(j.data)); } catch (e) { /* noop */ }
+        USER = j.data; AUTH = j.data.token;
+        document.getElementById('loginView').hidden = true;
+        setUserChip();
+        load(ym || thisYm(), false, true);
+      } catch (e) {
+        msg.textContent = e.message === 'Failed to fetch' ? '通信できませんでした。電波を確認してください' : e.message;
+        document.getElementById('loginId').value = '';
+      }
+    }
+    function logoutShift() {
+      if (history.length && !confirm('保存していない変更があります。破棄してログアウトしますか？')) return;
+      try { localStorage.removeItem('medash_auth'); Object.keys(localStorage).filter(k => k.startsWith('meshift_month_')).forEach(k => localStorage.removeItem(k)); } catch (e) { /* noop */ }
+      AUTH = ''; USER = null; location.reload();
+    }
+    function setUserChip() {
+      const el = document.getElementById('userChip');
+      if (el) el.textContent = USER ? String(USER.name).split(/\s/)[0] : '';
+      const b = document.getElementById('logoutBtn'); if (b) b.title = (USER ? USER.name + 'さん　' : '') + 'ログアウト';
+    }
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('loginId').addEventListener('input', e => {
+        e.target.value = e.target.value.replace(/\D/g, '').slice(0, 5);
+        if (e.target.value.length === 5) doLogin(e.target.value);
+      });
+      document.getElementById('logoutBtn').onclick = logoutShift;
+      setUserChip();
+      if (!AUTH) showLogin('');
+    });
+  </script>
+  <script>
+    const OFF_CODES = ['OFF', 'PAID', 'SP_LEAVE', 'ABSENT', 'CHILDCARE'];
+    const HALF_AM = ['PM_OFF', 'PM_PAID'];   // 午前だけ勤務
+    const HALF_PM = ['AM_OFF', 'AM_PAID'];   // 午後だけ勤務
+    const TIME_CODES = ['HOUR_PAID', 'LATE', 'EARLY'];
+    const SHORT = { OFF: '公休', PAID: '有休', SP_LEAVE: '特休', ABSENT: '欠勤', CHILDCARE: '育休',
+      AM_OFF: 'AM公', PM_OFF: 'PM公', AM_PAID: 'AM有', PM_PAID: 'PM有', HOUR_PAID: '時有', LATE: '遅刻', EARLY: '早退' };
+    const FIXED_DAYS = ['月', '火', '水', '木', '金', '土', '日', '祝'];
+    /** 定休日（例：「水,木,土,日,祝」）にあたる日か */
+    function isFixedOff(staff, day) {
+      const f = String(staff.fixedOff || '');
+      if (!f) return false;
+      return f.includes(WEEK[day.dow]) || (f.includes('祝') && Boolean(day.holiday) && day.rest);
+    }
+    const WEEK = ['日', '月', '火', '水', '木', '金', '土'];
+    const ROLES = ['臨床工学技士', 'MEサポーター'];
+    const ROLE_KEY = { '臨床工学技士': 'ce', 'MEサポーター': 'sp' };
+    const isAdmin = true; // このアプリは管理者専用（サーバー側でGoogleアカウントを確認）
+    /** 最低出勤人数（設定値）。職種ごと・平日／休日ごと */
+    function minFor(role, rest) {
+      const c = (app.autoSettings || {})[role] || { minWeekday: 2, minRest: 1 };
+      return rest ? Number(c.minRest) : Number(c.minWeekday);
+    }
+    const mq = window.matchMedia('(max-width: 760px)');
+
+    let app = { staffList: [], shiftTypes: [], shifts: {}, events: {}, holidays: {} };
+    let typeMap = {};
+    let ym = '';
+    let stamp = 'WORK';
+    let paletteStaff = null;
+    let history = [];
+    let editing = null;
+    let editingType = 'WORK';
+    let editingEvent = null;
+    let staffDraft = [];
+    let mView = 'day';
+    let mDate = '';
+    let mStaff = '';
+    const FILTER_KEY = 'meShift.shownIds';
+    let shownIds = (() => { try { const v = localStorage.getItem(FILTER_KEY); return v ? new Set(JSON.parse(v)) : null; } catch (e) { return null; } })();
+
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const pad = n => String(n).padStart(2, '0');
+    const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+
+    /* ---------- 判定ロジック（コード.gs と同じ） ---------- */
+    function parsePattern(str) {
+      if (!str) return { label: '', time: '' };
+      const s = String(str).normalize('NFKC').trim();
+      const m = s.match(/^(.*?)[:\s]\s*(\d{1,2}:\d{2}\s*[-~〜]\s*\d{1,2}:\d{2})\s*$/);
+      if (m && !/^\d{1,2}$/.test(m[1].trim())) return { label: m[1].trim(), time: normTime(m[2]) };
+      if (/^\d{1,2}:\d{2}\s*[-~〜]\s*\d{1,2}:\d{2}$/.test(s)) return { label: '', time: normTime(s) };
+      return { label: s, time: '' };
+    }
+    function normTime(t) { return String(t).replace(/\s/g, '').replace(/[~〜]/, '-'); }
+    function shortTime(t) {
+      const m = String(t || '').match(/(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})/);
+      if (!m) return t || '';
+      const f = (h, mi) => Number(h) + ':' + mi;
+      return f(m[1], m[2]) + '-' + f(m[3], m[4]);
+    }
+
+    function resolve(staff, rest, cell) {
+      const P = { A: parsePattern(staff.patA), B: parsePattern(staff.patB), C: parsePattern(staff.patC), D: parsePattern(staff.patD) };
+      const spec = parsePattern(staff.specialTask);
+      const wk = staff.weekendPat || 'A';
+      const restPat = (rest && wk !== 'A' && P[wk] && P[wk].time) ? P[wk] : null;
+      const base = restPat || P.A;
+      const custom = cell.customTime ? parsePattern(cell.customTime) : null;
+      const out = (label, time, kind, extra) => Object.assign(
+        { patternLabel: label, workTime: time || '', kind, isSpecialTask: false, specialTaskName: '', halfDay: '' }, extra || {});
+      if (cell.type === 'SPECIAL') {
+        const name = spec.label || '特別業務';
+        return out('〇' + name, (custom && custom.time) || spec.time || base.time, 'special', { isSpecialTask: true, specialTaskName: name });
+      }
+      if (OFF_CODES.includes(cell.type)) return out('', '', 'off');
+      if (TIME_CODES.includes(cell.type)) {
+        // 時間有休：入力した時間＝休んだ時間。遅刻・早退：入力した時間＝勤務した時間
+        if (cell.type === 'HOUR_PAID') return out('', base.time, 'partial', { offTime: custom && custom.time ? custom.time : '' });
+        return out('', custom && custom.time ? custom.time : base.time, 'partial');
+      }
+      if (custom && custom.time) return out(custom.label || '時間指定', custom.time, 'custom');
+      const pm = cell.type.match(/^PAT_([BCD])$/);
+      if (pm) {
+        const q = P[pm[1]];
+        return q.time ? out(q.label || 'パターン' + pm[1], q.time, 'pattern') : out(P.A.label || '日勤', P.A.time, 'pattern');
+      }
+      if (HALF_AM.includes(cell.type)) return out('', base.time, 'half', { halfDay: 'AM' });
+      if (HALF_PM.includes(cell.type)) return out('', base.time, 'half', { halfDay: 'PM' });
+      if (restPat) return out(restPat.label || '休日', restPat.time, 'rest');
+      return out(P.A.label || '日勤', P.A.time, rest ? 'rest-default' : 'default');
+    }
+
+    function coverage(type, time, offTime) {
+      if (OFF_CODES.includes(type)) return { am: false, pm: false };
+      if (HALF_AM.includes(type)) return { am: true, pm: false };
+      if (HALF_PM.includes(type)) return { am: false, pm: true };
+      const span = t => {
+        const m = String(t || '').match(/(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})/);
+        return m ? [+m[1] * 60 + +m[2], +m[3] * 60 + +m[4]] : null;
+      };
+      const w = span(time);
+      if (!w) return { am: true, pm: true };
+      let segs = [w];
+      const o = span(offTime);
+      if (o) segs = [[w[0], Math.min(w[1], o[0])], [Math.max(w[0], o[1]), w[1]]].filter(x => x[1] > x[0]);
+      return { am: segs.some(x => x[0] < 720), pm: segs.some(x => x[1] > 780) };
+    }
+    /** 区分の名前（時間付きの区分は時間も） */
+    function typeLabel(c, r, t) {
+      if (r.kind === 'off' || r.kind === 'half') return t.label;
+      if (r.kind === 'partial') {
+        if (c.type === 'HOUR_PAID') return r.offTime ? `${t.label}（${shortTime(r.offTime)} 休）` : t.label;
+        return c.customTime ? `${t.label}（${shortTime(r.workTime)}）` : t.label;
+      }
+      return r.patternLabel;
+    }
+
+    function isRestDay(ds, dow) {
+      const ev = app.events[ds] || '';
+      if (ev.includes('休診')) return true;
+      if (ev.includes('診療日')) return false;
+      return dow === 0 || dow === 6 || Boolean(app.holidays[ds]);
+    }
+
+    function getDays() {
+      const [y, m] = ym.split('-').map(Number);
+      const last = new Date(y, m, 0).getDate();
+      const days = [];
+      for (let d = 1; d <= last; d++) {
+        const dow = new Date(y, m - 1, d).getDay();
+        const ds = `${ym}-${pad(d)}`;
+        const holiday = app.holidays[ds] || '';
+        days.push({ d, dow, ds, holiday, rest: isRestDay(ds, dow), red: dow === 0 || Boolean(holiday), blue: dow === 6 && !holiday });
+      }
+      return days;
+    }
+    const dayOf = ds => getDays().find(d => d.ds === ds);
+
+    function visibleStaff() {
+      const keys = Object.keys(app.shifts);
+      return app.staffList.filter(s => s.status !== '退職' || keys.some(k => k.endsWith('_' + s.id)));
+    }
+    /** 表示する人（選んでいなければ全員）。人数の集計には使わない */
+    function displayStaff() {
+      const vs = visibleStaff();
+      if (!shownIds) return vs;
+      const f = vs.filter(s => shownIds.has(s.id));
+      return f.length ? f : vs;
+    }
+    function updateFilterBtn() {
+      const btn = $('filterBtn');
+      const on = Boolean(shownIds) && displayStaff().length < visibleStaff().length;
+      btn.textContent = on ? `表示：${displayStaff().length}人` : '表示：全員';
+      btn.classList.toggle('filtering', on);
+    }
+
+    /* ---------- 業務 ---------- */
+    const tasksOf = (ds, id) => ((app.taskAssign || {})[`${ds}_${id}`] || []);
+    const taskRoles = () => new Set((app.tasks || []).map(t => t.role || '臨床工学技士'));
+    const taskFor = name => (app.tasks || []).find(t => t.name === name);
+    const tasksForRole = role => (app.tasks || []).filter(t => !t.role || t.role === role);
+    const chip = t => `<span class="tk" style="background:${esc(t.color)}" title="${esc(t.name)}">${esc(t.short)}</span>`;
+    function setTasks(ds, id, list) {
+      const key = `${ds}_${id}`;
+      const order = (app.tasks || []).map(t => t.name);
+      const sorted = list.filter((x, i) => list.indexOf(x) === i).sort((a, b) => order.indexOf(a) - order.indexOf(b));
+      app.taskAssign = app.taskAssign || {};
+      if (sorted.length) app.taskAssign[key] = sorted; else delete app.taskAssign[key];
+    }
+    function taskCountOn(ds, name) {
+      return visibleStaff().filter(s => tasksOf(ds, s.id).includes(name)).length;
+    }
+    function isWorking(staff, day) {
+      const r = resolve(staff, day.rest, cellData(day.ds, staff));
+      return r.kind !== 'off';
+    }
+    /** その日の業務の担当（担当がいる業務だけ）。1件も無く技士が出勤していれば注意を出す */
+    function taskSummaryHtml(day, style) {
+      const tasks = app.tasks || [];
+      if (!tasks.length) return '';
+      const lines = tasks.map(t => ({ t, names: visibleStaff().filter(x => tasksOf(day.ds, x.id).includes(t.name)).map(x => x.name) }))
+        .filter(x => x.names.length);
+      const ce = visibleStaff().filter(st => taskRoles().has(st.role) && isWorking(st, day)).length;
+      if (!lines.length) return ce ? `<div class="m-tasks" style="${style}"><div class="low">担当割りがまだありません</div></div>` : '';
+      return `<div class="m-tasks" style="${style}">${lines.map(x => `<div>${chip(x.t)}<b>${esc(x.t.name)}</b>${esc(x.names.join('・'))}</div>`).join('')}</div>`;
+    }
+    function setViewMode(m) {
+      viewMode = m;
+      document.body.classList.toggle('task-mode', m === 'task');
+      document.querySelectorAll('[data-vmode]').forEach(b => b.classList.toggle('on', b.dataset.vmode === m));
+      if (m === 'task' && !taskFor(taskStamp)) taskStamp = (app.tasks || [])[0] ? app.tasks[0].name : '';
+      render();
+    }
+    function toggleTask(ds, staffId) {
+      const staff = app.staffList.find(s => s.id === staffId);
+      const day = dayOf(ds);
+      if (!taskStamp) { toast('業務マスタに業務がありません', true); return; }
+      if (!isWorking(staff, day)) { toast(`${staff.name}さんはこの日休みです`, true); return; }
+      const cur = tasksOf(ds, staffId);
+      pushHistory([{ key: `tk:${ds}_${staffId}`, prev: cur.length ? cur.slice() : undefined }]);
+      setTasks(ds, staffId, cur.includes(taskStamp) ? cur.filter(x => x !== taskStamp) : cur.concat([taskStamp]));
+      render();
+    }
+    /** 必要人数に足りない業務を、出勤している人から均等に埋める（今月その業務が少ない人→その日の担当が少ない人の順） */
+    function autoTasks() {
+      const tasks = app.tasks || [];
+      if (!tasks.length) { toast('業務マスタに業務がありません', true); return; }
+      const days = getDays();
+      const staffs = visibleStaff().filter(s => s.status === '在籍');
+      const monthCount = {};
+      staffs.forEach(s => days.forEach(d => tasksOf(d.ds, s.id).forEach(n => { monthCount[`${s.id}|${n}`] = (monthCount[`${s.id}|${n}`] || 0) + 1; })));
+      const entries = [], short = [];
+      days.forEach(day => tasks.forEach(t => {
+        const need = day.rest ? t.needRest : t.needWeekday;
+        let have = taskCountOn(day.ds, t.name);
+        while (have < need) {
+          const cands = staffs.filter(s => (!t.role || s.role === t.role) && isWorking(s, day) && !tasksOf(day.ds, s.id).includes(t.name))
+            .sort((a, b) => (monthCount[`${a.id}|${t.name}`] || 0) - (monthCount[`${b.id}|${t.name}`] || 0)
+              || tasksOf(day.ds, a.id).length - tasksOf(day.ds, b.id).length || a.order - b.order);
+          if (!cands.length) { short.push(`${day.d}日 ${t.name}`); break; }
+          const s = cands[0];
+          const cur = tasksOf(day.ds, s.id);
+          if (!entries.some(e => e.key === `tk:${day.ds}_${s.id}`)) entries.push({ key: `tk:${day.ds}_${s.id}`, prev: cur.length ? cur.slice() : undefined });
+          setTasks(day.ds, s.id, cur.concat([t.name]));
+          monthCount[`${s.id}|${t.name}`] = (monthCount[`${s.id}|${t.name}`] || 0) + 1;
+          have++;
+        }
+      }));
+      if (entries.length) pushHistory(entries);
+      render();
+      if (short.length) toast(`${entries.length}件を割り振りました。出勤者が足りない日：${short.slice(0, 4).join('、')}${short.length > 4 ? ' など' : ''}`, true);
+      else toast(entries.length ? `${entries.length}件を割り振りました。確認して「保存」を押してください` : '足りない業務はありませんでした');
+    }
+
+    function cellData(ds, staff) {
+      return app.shifts[`${ds}_${staff.id}`] ||
+        { date: ds, staffId: staff.id, type: staff.status === '育休中' ? 'CHILDCARE' : 'WORK', isRequest: false, customTime: '', note: '' };
+    }
+
+    /** 表に出す短い表示（空文字なら何も出さない＝通常の日勤） */
+    function shortMark(c, r) {
+      if (c.unknown) return { text: c.rawText, unknown: true };
+      if (c.type === 'SPECIAL') return { ring: true };
+      if (SHORT[c.type]) return { text: SHORT[c.type] };
+      if (r.kind === 'default' || r.kind === 'rest-default') return { text: '' };
+      if (r.kind === 'custom' && !parsePattern(c.customTime).label) return { text: '時間' };
+      return { text: r.patternLabel.slice(0, 2) };
+    }
+    function counts(day, staffs) {
+      const c = { ce: { am: 0, pm: 0 }, sp: { am: 0, pm: 0 }, special: 0 };
+      staffs.forEach(s => {
+        const cell = cellData(day.ds, s);
+        const r = resolve(s, day.rest, cell);
+        const cv = coverage(cell.type, r.workTime, r.offTime);
+        const k = s.role === '臨床工学技士' ? 'ce' : 'sp';
+        if (cv.am) c[k].am++;
+        if (cv.pm) c[k].pm++;
+        if (cell.type === 'SPECIAL') c.special++;
+      });
+      return c;
+    }
+
+    /* ---------- 読み込み ---------- */
+    const thisYm = () => todayStr().slice(0, 7);
+    function addMonth(base, n) { const [y, m] = base.split('-').map(Number); const d = new Date(y, m - 1 + n, 1); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; }
+
+    function goMonth(next) {
+      if (!next || next === ym) return;
+      if (history.length && !confirm('保存していない変更があります。破棄して月を移動しますか？')) { $('monthPicker').value = ym; return; }
+      history = [];
+      load(next);
+    }
+
+    /* ---------- 読み込み：前回の内容をすぐ表示 → 裏で最新を取得して差し替え ---------- */
+    const CACHE_KEY = m => 'meshift_month_' + m;
+    function readCache(m) { try { const v = JSON.parse(localStorage.getItem(CACHE_KEY(m)) || 'null'); return v && v.data ? v : null; } catch (e) { return null; } }
+    function writeCache(m, data) { try { localStorage.setItem(CACHE_KEY(m), JSON.stringify({ at: Date.now(), data })); } catch (e) { /* 容量不足などは無視 */ } }
+
+    /** サーバーの内容を画面に入れる。未保存の変更があれば、その部分だけ手元の内容を残す */
+    function applyData(res, keepLocal) {
+      const old = app;
+      const edited = new Set(history.flat().map(e => e.key));
+      app = res;
+      if (keepLocal) { app.shifts = old.shifts; app.events = old.events; app.taskAssign = old.taskAssign; }
+      else if (edited.size && old && old.shifts) {
+        // 未保存の変更は残す。変更前の内容（競合の確認用）も、変更したときに見えていたものを使う
+        app.raw = app.raw || {}; app.evRaw = app.evRaw || {}; app.taskAssign = app.taskAssign || {}; app.taskRaw = app.taskRaw || {};
+        edited.forEach(k => {
+          if (k.startsWith('ev:')) {
+            const ds = k.slice(3);
+            if (old.events[ds] !== undefined) app.events[ds] = old.events[ds]; else delete app.events[ds];
+            if ((old.evRaw || {})[ds] !== undefined) app.evRaw[ds] = old.evRaw[ds]; else delete app.evRaw[ds];
+          } else if (k.startsWith('tk:')) {
+            const kk = k.slice(3), ds = kk.slice(0, 10);
+            if ((old.taskAssign || {})[kk]) app.taskAssign[kk] = old.taskAssign[kk]; else delete app.taskAssign[kk];
+            Object.keys(old.taskRaw || {}).filter(x => x.startsWith(ds + '|')).forEach(x => { app.taskRaw[x] = old.taskRaw[x]; });
+          } else {
+            if (old.shifts[k]) app.shifts[k] = old.shifts[k]; else delete app.shifts[k];
+            if ((old.raw || {})[k]) app.raw[k] = old.raw[k]; else delete app.raw[k];
+          }
+        });
+      } else history = [];
+      lastLoadedAt = Date.now();
+      $('sheetLink').href = app.sheetUrl || '#';
+      const un = app.unknown || [];
+      $('unknownNotice').hidden = !un.length;
+      $('unknownNotice').textContent = un.length
+        ? `シートに読み取れない入力が ${un.length}件あります（${un.slice(0, 4).map(u => `${u.day}日 ${u.name}「${u.text}」`).join('、')}${un.length > 4 ? ' など' : ''}）。通常勤務として数え、文字はそのまま残しています。`
+        : '';
+      typeMap = Object.fromEntries(app.shiftTypes.map(t => [t.code, t]));
+      if (!typeMap[stamp]) stamp = 'WORK';
+      app.taskAssign = app.taskAssign || {};
+      if (!taskFor(taskStamp)) taskStamp = (app.tasks || [])[0] ? app.tasks[0].name : '';
+      if (paletteStaff && !app.staffList.some(s => s.id === paletteStaff)) paletteStaff = null;
+      if (!mDate || !mDate.startsWith(ym)) mDate = todayStr().startsWith(ym) ? todayStr() : `${ym}-01`;
+      const vs = displayStaff();
+      if (!vs.some(s => s.id === mStaff)) mStaff = vs.length ? vs[0].id : '';
+      updateState();
+      render();
+    }
+
+    let loadSeq = 0;
+    function setSync(text) { const el = $('syncState'); if (el) { el.textContent = text; el.hidden = !text; } }
+    function load(target, keepLocal, quiet) {
+      const seq = ++loadSeq;
+      const monthChanged = target !== ym;
+      ym = target;
+      $('monthPicker').value = ym;
+      if (!keepLocal && (monthChanged || !app.staffList.length)) {
+        const c = readCache(ym);
+        if (c) { history = []; applyData(c.data, false); }
+        else if (!quiet) { $('thead').innerHTML = ''; $('tbody').innerHTML = '<tr><td class="loading">読み込み中…</td></tr>'; $('mBody').innerHTML = '<p class="loading">読み込み中…</p>'; }
+      }
+      setSync('最新を確認中…');
+      google.script.run
+        .withSuccessHandler(res => {
+          writeCache(target, res);
+          if (seq !== loadSeq || target !== ym) return; // 途中で別の月に移った
+          applyData(res, keepLocal);
+          setSync('');
+        })
+        .withFailureHandler(err => {
+          if (seq !== loadSeq) return;
+          if (app.staffList.length) { setSync('最新を取得できませんでした（前回の内容を表示中）'); toast(err.message, true); }
+          else $('tbody').innerHTML = `<tr><td class="loading">読み込めませんでした。ページを再読み込みしてください（${esc(err.message)}）</td></tr>`;
+          if (typeof onAuthError === 'function') onAuthError(err);
+        })
+        .getShiftAppData(ym, AUTH);
+    }
+    let lastLoadedAt = 0;
+
+    /** スプレッドシート側の変更を読み込む（未保存の変更があるときは確認） */
+    function reload(silent) {
+      if (history.length) {
+        if (silent) return;
+        if (!confirm('保存していない変更があります。破棄してシートの最新内容を読み込みますか？')) return;
+      }
+      history = [];
+      load(ym, false, true);
+    }
+
+    function render() {
+      const mobile = mq.matches;
+      $('pcView').hidden = mobile;
+      $('mView').hidden = !mobile;
+      if (!mobile) { $('mStampBar').hidden = true; document.body.classList.remove('stamping'); }
+      updateFilterBtn();
+      if (mobile) renderMobile(); else { renderPalette(); renderGrid(); }
+    }
+
+    /* ---------- スタンプ（PC） ---------- */
+    // 休み系：育休か、休日加算のある区分（マスタに休みを追加しても自動でここに入る）
+    const isRestType = t => t.group ? t.group !== '勤務' : (t.code === 'CHILDCARE' || t.offVal > 0);
+    const groupOf = t => t.group || (t.offVal >= 1 || t.code === 'CHILDCARE' ? '終日' : '半日');
+    let restOpen = false;
+    function restMenuHtml() {
+      const rests = app.shiftTypes.filter(isRestType);
+      if (!rests.length) return '';
+      const cur = rests.find(t => t.code === stamp);
+
+      const sw = cur || typeMap.OFF || rests[0];
+      let html = `<span class="rest-menu${restOpen ? ' open' : ''}">
+        <button class="stamp${cur ? ' on' : ''}" data-rest-toggle aria-haspopup="true" aria-expanded="${restOpen}" style="--bg:${esc(sw.bg)};--fg:${esc(sw.color)}">
+          <span class="sw"></span>${cur ? '休み：' + esc(cur.label) : '休み'}<span class="caret">▾</span></button>
+        <div class="rest-pop" role="menu">`;
+      ['終日', '半日', '時間'].forEach(g => {
+        const list = rests.filter(t => groupOf(t) === g);
+        if (list.length) html += `<div class="grp">${g}</div>` + list.map(t => stampBtn(t.code, t.label, t)).join('');
+      });
+      return html + '</div></span>';
+    }
+    function stampBtn(code, label, t, title, ring) {
+      return `<button class="stamp${stamp === code ? ' on' : ''}" data-code="${code}" style="--bg:${esc(t.bg)};--fg:${esc(t.color)}" title="${esc(title || label)}"><span class="sw${ring ? ' ring' : ''}"></span>${esc(label)}</button>`;
+    }
+    function renderPalette() {
+      if (viewMode === 'task') {
+        const list = app.tasks || [];
+        $('palette').innerHTML = list.length
+          ? list.map(t => `<button class="stamp${taskStamp === t.name ? ' on' : ''}" data-task="${esc(t.name)}">${chip(t)}${esc(t.name)}</button>`).join('')
+          : '<span class="state">業務マスタに業務を登録してください</span>';
+        return;
+      }
+      const staff = paletteStaff ? app.staffList.find(s => s.id === paletteStaff) : null;
+      const t = c => typeMap[c] || { bg: '#fff', color: '#1e293b', label: c };
+      let html = '';
+      if (staff) {
+        html += `<span class="who">${esc(staff.name)}さん<button data-unselect aria-label="選択を解除">×</button></span>`;
+        const pA = parsePattern(staff.patA);
+        html += stampBtn('WORK', pA.label || '日勤', t('WORK'), pA.time);
+        if (staff.specialTask) {
+          const sp = parsePattern(staff.specialTask);
+          html += stampBtn('SPECIAL', sp.label || '特別業務', t('SPECIAL'), sp.time, true);
+        }
+        [['PAT_B', staff.patB], ['PAT_C', staff.patC], ['PAT_D', staff.patD]].forEach(([code, val]) => {
+          const p = parsePattern(val);
+          if (p.time) html += stampBtn(code, p.label || code.replace('PAT_', 'パターン'), t(code), p.time);
+        });
+        html += '<span class="sep"></span>' + restMenuHtml();
+      } else {
+        app.shiftTypes.filter(x => !isRestType(x)).forEach(x => {
+          const label = x.code === 'SPECIAL' ? '特別業務' : x.code === 'WORK' ? '日勤' : x.label.replace(/\(.*\)$/, '');
+          html += stampBtn(x.code, label, x, x.label, x.code === 'SPECIAL');
+        });
+        html += '<span class="sep"></span>' + restMenuHtml();
+      }
+      $('palette').innerHTML = html;
+    }
+    function togglePaletteStaff(id) {
+      paletteStaff = paletteStaff === id ? null : id;
+      if (!(typeMap[stamp] && isRestType(typeMap[stamp]))) stamp = 'WORK';
+      restOpen = false;
+      renderPalette();
+      renderGrid();
+    }
+
+    /* ---------- 月表（PC） ---------- */
+    function renderGrid() {
+      const days = getDays();
+      const today = todayStr();
+      const roles = taskRoles();
+      const staffs = viewMode === 'task' ? displayStaff().filter(s => roles.has(s.role)) : displayStaff();
+      const everyone = visibleStaff();
+      const span = days.length + 2;
+
+      $('cols').innerHTML = '<col class="c-name">' + days.map(() => '<col>').join('') + '<col class="c-sum"><col class="c-sum">';
+
+      let head = `<tr><th class="name">${Number(ym.split('-')[1])}月</th>`;
+      days.forEach(day => {
+        const cls = ['day', day.red ? 'sun' : day.blue ? 'sat' : '', day.rest ? 'rest' : '', day.ds === today ? 'today' : '',
+          !day.rest && (day.red || day.blue) ? 'override' : ''].filter(Boolean).join(' ');
+        const title = [day.holiday, app.events[day.ds], 'クリックで日報プレビュー'].filter(Boolean).join('\n');
+        head += `<th class="${cls}" data-date="${day.ds}" title="${esc(title)}"><span class="n">${day.d}</span><span class="w">${WEEK[day.dow]}</span></th>`;
+      });
+      head += viewMode === 'task' ? '<th class="sum-h">業務</th><th class="sum-h"></th></tr>' : '<th class="sum-h">公休</th><th class="sum-h">勤務</th></tr>';
+      $('thead').innerHTML = head;
+
+      let body = '';
+      let prevRole = null;
+      staffs.forEach(staff => {
+        if (staff.role !== prevRole) {
+          body += `<tr class="group"><th class="name">${esc(staff.role)}</th><td colspan="${span}"></td></tr>`;
+          prevRole = staff.role;
+        }
+        const pA = parsePattern(staff.patA);
+        const spec = parsePattern(staff.specialTask);
+        const tag = staff.status === '退職' ? '退職' : staff.status === '育休中' ? '育休中' : '';
+        body += `<tr><th class="name staff-name${paletteStaff === staff.id ? ' sel' : ''}" data-staff="${esc(staff.id)}"
+          title="${esc([staff.name, staff.patA, staff.specialTask ? '〇' + staff.specialTask : '', 'クリックでこの人のスタンプに切替'].filter(Boolean).join('\n'))}">
+          <div class="nm">${esc(staff.name)}${tag ? `<span class="tag">${tag}</span>` : ''}</div>
+          <div class="tm">${esc(shortTime(pA.time))}${spec.label ? ' 〇' : ''}</div></th>`;
+
+        let offSum = 0, workSum = 0, prevCC = false;
+        days.forEach(day => {
+          const c = cellData(day.ds, staff);
+          const t = typeMap[c.type] || typeMap.WORK;
+          offSum += t.offVal;
+          workSum += c.type === 'CHILDCARE' ? 0 : t.workVal;
+          const r = resolve(staff, day.rest, c);
+          const tip = [`${staff.name}　${day.d}日(${WEEK[day.dow]})`,
+            r.kind === 'off' || r.kind === 'half' ? t.label : `${typeLabel(c, r, t)}　${shortTime(r.workTime)}`, c.note, c.isRequest ? '希望休' : '', isAdmin && c.auto ? '（自動割り振り）' : ''].filter(Boolean).join('\n');
+
+          if (viewMode === 'task') {
+            if (r.kind === 'off') {
+              body += `<td class="cell offday${day.rest ? ' rest' : ''}" data-date="${day.ds}" data-staff="${esc(staff.id)}" title="${esc(tip)}"><span class="l">${esc(SHORT[c.type] || t.label)}</span></td>`;
+            } else {
+              const tks = tasksOf(day.ds, staff.id).map(n => taskFor(n)).filter(Boolean);
+              body += `<td class="cell${day.rest ? ' rest' : ''}" data-date="${day.ds}" data-staff="${esc(staff.id)}" title="${esc(tip + (tks.length ? '\n業務：' + tks.map(x => x.name).join('、') : ''))}">${tks.map(chip).join('')}</td>`;
+            }
+            return;
+          }
+          const isCC = c.type === 'CHILDCARE' && !c.note && !c.isRequest;
+          if (isCC) {
+            body += `<td class="cell cc" data-date="${day.ds}" data-staff="${esc(staff.id)}" title="${esc(tip)}"><span class="l">${prevCC ? '' : '育休'}</span></td>`;
+            prevCC = true;
+            return;
+          }
+          prevCC = false;
+
+          const mk = shortMark(c, r);
+          let inner = mk.ring ? '<span class="ring"></span>' : mk.text ? `<span class="l"${mk.unknown ? ' style="color:var(--warn)"' : ''}>${esc(mk.text)}</span>` : '';
+          if (c.note) inner += `<span class="nt">${esc(c.note)}</span>`;
+          if (c.isRequest) inner += '<span class="x">×</span>';
+          const style = OFF_CODES.includes(c.type) || HALF_AM.concat(HALF_PM, TIME_CODES).includes(c.type)
+            ? `background:${esc(t.bg)};color:${esc(t.color)}`
+            : `color:${esc(t.color)}`;
+          body += `<td class="cell${day.rest ? ' rest' : ''}${c.auto ? ' auto' : ''}" data-date="${day.ds}" data-staff="${esc(staff.id)}" style="${style}" title="${esc(tip)}">${inner}</td>`;
+        });
+        if (viewMode === 'task') {
+          const n = days.reduce((a, d) => a + tasksOf(d.ds, staff.id).length, 0);
+          body += `<td class="total" title="今月の業務の担当数">${n}</td><td class="total"></td></tr>`;
+        } else body += `<td class="total">${offSum}</td><td class="total">${workSum}</td></tr>`;
+      });
+
+      if (viewMode === 'task') {
+        (app.tasks || []).forEach((t, i) => {
+          body += `<tr class="count${i === 0 ? ' first' : ''}"><th class="name" title="担当人数">${chip(t)}${esc(t.name)}</th>`;
+          days.forEach(day => {
+            const n = taskCountOn(day.ds, t.name);
+            body += `<td class="${n === 0 ? 'need' : ''}" title="担当 ${n}人">${n || ''}</td>`;
+          });
+          body += '<td></td><td></td></tr>';
+        });
+        // 担当割りが1件も無い日（技士が出勤している日）だけ赤
+        body += `<tr class="count"><th class="name" title="担当割りが1件も無い日は赤">担当割り</th>`;
+        days.forEach(day => {
+          const total = (app.tasks || []).reduce((a, t) => a + taskCountOn(day.ds, t.name), 0);
+          const ce = visibleStaff().filter(st => taskRoles().has(st.role) && isWorking(st, day)).length;
+          body += `<td class="${!total && ce ? 'low' : ''}" title="${!total && ce ? '担当割りがまだありません' : `担当 ${total}件`}">${!total && ce ? '未' : total ? '✓' : ''}</td>`;
+        });
+        body += '<td></td><td></td></tr>';
+      }
+      // 集計：午前と午後が同じなら1つの数、違えば「午前/午後」
+      const cnts = days.map(d => counts(d, everyone));
+      const fmt = (o, rest, role) => {
+        const low = Math.min(o.am, o.pm) < minFor(role, rest);
+        return `<td class="${low ? 'low' : ''}" title="午前 ${o.am}人 / 午後 ${o.pm}人">${o.am === o.pm ? o.am : `${o.am}/${o.pm}`}</td>`;
+      };
+      const allMark = staffs.length < everyone.length ? '<span class="tag">全員</span>' : '';
+      if (viewMode !== 'task') body += `<tr class="count first"><th class="name" title="午前/午後の出勤人数（全員）">技士${allMark}</th>${days.map((d, i) => fmt(cnts[i].ce, d.rest, '臨床工学技士')).join('')}<td></td><td></td></tr>`;
+      if (viewMode !== 'task') body += `<tr class="count"><th class="name" title="午前/午後の出勤人数（全員）">サポーター${allMark}</th>${days.map((d, i) => fmt(cnts[i].sp, d.rest, 'MEサポーター')).join('')}<td></td><td></td></tr>`;
+      if (viewMode !== 'task' && cnts.some(c => c.special)) {
+        body += `<tr class="count"><th class="name">〇特別業務</th>${cnts.map(c => `<td>${c.special || ''}</td>`).join('')}<td></td><td></td></tr>`;
+      }
+      body += '<tr class="ev-row"><th class="name" style="font-size:10.5px;color:var(--muted)">全体予定</th>';
+      days.forEach(day => {
+        const ev = app.events[day.ds] || '';
+        body += `<td data-event="${day.ds}" title="${esc(ev || 'クリックで予定を入力')}"><span class="ev">${esc(ev)}</span></td>`;
+      });
+      body += '<td></td><td></td></tr>';
+      $('tbody').innerHTML = body;
+    }
+
+    /* ---------- スマホ ---------- */
+    let mStamping = false;
+    let mDateChanged = true;
+    let mOffOpen = false;
+    let lastTapped = '';
+
+    function renderMobile() {
+      document.querySelectorAll('.m-tab[data-mview]').forEach(b => b.classList.toggle('on', b.dataset.mview === mView));
+      $('mStampToggle').classList.toggle('on', mStamping);
+      document.body.classList.toggle('stamping', mStamping);
+      $('mStampBar').hidden = !mStamping;
+      if (mView === 'day') renderMobileDay(); else renderMobilePerson();
+      if (mStamping) renderStampBar();
+      if (lastTapped) {
+        const el = $('mBody').querySelector(`[data-mcell="${CSS.escape(lastTapped)}"]`);
+        if (el) el.classList.add('tapped');
+        lastTapped = '';
+      }
+    }
+
+    /** スマホのスタンプ：人ごとではその人のパターン名、日ごとでは共通の名前 */
+    function renderStampBar() {
+      const staff = mView === 'person' ? app.staffList.find(s => s.id === mStaff) : null;
+      const t = c => typeMap[c] || { bg: '#fff', color: '#1e293b', label: c };
+      let html = '';
+      if (staff) {
+        const pA = parsePattern(staff.patA);
+        html += stampBtn('WORK', pA.label || '日勤', t('WORK'), pA.time);
+        if (staff.specialTask) { const sp = parsePattern(staff.specialTask); html += stampBtn('SPECIAL', sp.label || '特別業務', t('SPECIAL'), sp.time, true); }
+        [['PAT_B', staff.patB], ['PAT_C', staff.patC], ['PAT_D', staff.patD]].forEach(([code, v]) => {
+          const p = parsePattern(v);
+          if (p.time) html += stampBtn(code, p.label || code, t(code), p.time);
+        });
+      } else {
+        app.shiftTypes.filter(x => !isRestType(x)).forEach(x => {
+          const label = x.code === 'SPECIAL' ? '特別業務' : x.code === 'WORK' ? '日勤' : x.label.replace(/\(.*\)$/, '');
+          html += stampBtn(x.code, label, x, x.label, x.code === 'SPECIAL');
+        });
+      }
+      html += '<span class="gap"></span>';
+      app.shiftTypes.filter(isRestType).forEach(x => { html += stampBtn(x.code, x.label, x); });
+      const row = $('msbStamps');
+      const keep = row.scrollLeft;
+      row.innerHTML = html;
+      row.scrollLeft = keep;
+
+      const cur = (row.querySelector('.stamp.on') || {}).textContent || (typeMap[stamp] || {}).label || '';
+      $('msbLabel').textContent = `${mView === 'person' ? '日付' : '名前'}をタップで「${cur}」、2回タップで空欄、長押しで詳細`;
+      $('mUndo').disabled = !history.length;
+      $('mReq').checked = $('reqToggle').checked;
+    }
+
+    function setMobileStamping(on) {
+      mStamping = on;
+      if (on && !typeMap[stamp]) stamp = 'WORK';
+      renderMobile();
+    }
+
+    function renderMobileDay() {
+      const days = getDays();
+      const today = todayStr();
+      const day = days.find(d => d.ds === mDate) || days[0];
+      const staffs = displayStaff();
+      const c = counts(day, visibleStaff());
+
+      let html = '<div class="strip" id="strip">';
+      days.forEach(d => {
+        const cls = ['d-chip', d.rest ? 'rest' : '', d.red ? 'sun' : d.blue ? 'sat' : '', d.ds === day.ds ? 'on' : '', d.ds === today ? 'today' : ''].filter(Boolean).join(' ');
+        html += `<button class="${cls}" data-mdate="${d.ds}"><b>${d.d}</b><span>${WEEK[d.dow]}</span></button>`;
+      });
+      html += '</div>';
+
+      const low = (n, role) => n < minFor(role, day.rest) ? ' class="low"' : '';
+      html += `<div class="m-sec">
+        <div class="m-head"><h2>${Number(ym.slice(5))}月${day.d}日(${WEEK[day.dow]})</h2>
+          <span class="sub">${esc([day.rest ? '休日' : '平日', day.holiday].filter(Boolean).join('・'))}</span></div>
+        <div class="m-cover">
+          <div${low(c.ce.am, '臨床工学技士')}>技士 午前<b>${c.ce.am}</b></div><div${low(c.ce.pm, '臨床工学技士')}>技士 午後<b>${c.ce.pm}</b></div>
+          <div${low(c.sp.am, 'MEサポーター')}>サポ 午前<b>${c.sp.am}</b></div><div${low(c.sp.pm, 'MEサポーター')}>サポ 午後<b>${c.sp.pm}</b></div>
+        </div>
+ ${taskSummaryHtml(day, '')}
+        ${app.events[day.ds] || isAdmin ? `<div class="m-event" data-event="${day.ds}">${app.events[day.ds] ? esc(app.events[day.ds]) : '全体予定を入力'}</div>` : ''}`;
+
+      const rowHtml = (s, cell, t, r) => {
+        const off = r.kind === 'off';
+        const label = cell.type === 'SPECIAL' ? `<span class="ring"></span><b style="color:var(--shuin)">${esc(r.specialTaskName)}</b>`
+          : `<span class="badge" style="background:${esc(t.bg)};color:${esc(t.color)}">${esc(typeLabel(cell, r, t))}</span>`;
+        const time = off ? '' : r.halfDay ? (r.halfDay === 'AM' ? '午前' : '午後') : shortTime(r.workTime);
+        return `<div class="m-row${off ? ' off' : ''}" data-mcell="${day.ds}|${esc(s.id)}">
+          <span class="nm">${esc(s.name)}</span>
+          <span class="what">${label}<span class="time">${esc(time)}</span><span class="tks">${tasksOf(day.ds, s.id).map(n => taskFor(n)).filter(Boolean).map(chip).join('')}</span>${cell.note ? `<span class="note">${esc(cell.note)}</span>` : ''}</span>
+          <span class="x">${cell.isRequest ? '×' : ''}</span></div>`;
+      };
+      const offs = [];
+      let prevRole = null;
+      staffs.forEach(s => {
+        const cell = cellData(day.ds, s);
+        const t = typeMap[cell.type] || typeMap.WORK;
+        const r = resolve(s, day.rest, cell);
+        if (r.kind === 'off') { offs.push({ s, cell, t, r }); return; }
+        if (s.role !== prevRole) { html += `<div class="m-group">${esc(s.role)}</div>`; prevRole = s.role; }
+        html += rowHtml(s, cell, t, r);
+      });
+      if (offs.length) {
+        html += `<details class="offs" data-moffs${mOffOpen ? ' open' : ''}><summary>休み ${offs.length}人<span class="names">${esc(offs.map(o => o.s.name).join('、'))}</span></summary>`;
+        html += offs.map(o => rowHtml(o.s, o.cell, o.t, o.r)).join('') + '</details>';
+      }
+      html += '</div>';
+      const prevLeft = $('strip') ? $('strip').scrollLeft : null;
+      $('mBody').innerHTML = html;
+      const strip = $('strip');
+      const on = strip.querySelector('.on');
+      if (prevLeft !== null && !mDateChanged) strip.scrollLeft = prevLeft;
+      else if (on) strip.scrollLeft = on.offsetLeft - strip.clientWidth / 2 + on.offsetWidth / 2;
+      mDateChanged = false;
+    }
+
+    function renderMobilePerson() {
+      const staffs = displayStaff();
+      const staff = staffs.find(s => s.id === mStaff) || staffs[0];
+      if (!staff) { $('mBody').innerHTML = '<p class="loading">スタッフがいません</p>'; return; }
+      const days = getDays();
+      const today = todayStr();
+
+      let html = '<div class="p-staff">' + staffs.map(s =>
+        `<button class="p-chip${s.id === staff.id ? ' on' : ''}" data-mstaff="${esc(s.id)}">${esc(s.name)}</button>`).join('') + '</div>';
+      html += `<div class="m-sec"><div class="m-head"><h2>${esc(staff.name)}さん</h2><span class="sub">${esc(staff.role)}　${esc(shortTime(parsePattern(staff.patA).time))}</span></div><div class="cal">`;
+      WEEK.forEach((w, i) => { html += `<div class="wk${i === 0 ? ' sun' : i === 6 ? ' sat' : ''}">${w}</div>`; });
+      for (let i = 0; i < days[0].dow; i++) html += '<div class="cd blank"></div>';
+
+      let offSum = 0, workSum = 0;
+      days.forEach(day => {
+        const c = cellData(day.ds, staff);
+        const t = typeMap[c.type] || typeMap.WORK;
+        offSum += t.offVal;
+        workSum += c.type === 'CHILDCARE' ? 0 : t.workVal;
+        const r = resolve(staff, day.rest, c);
+        const mk = shortMark(c, r);
+        const cls = ['cd', day.rest ? 'rest' : '', day.red ? 'sun' : day.blue ? 'sat' : '', day.ds === today ? 'today' : ''].filter(Boolean).join(' ');
+        const mark = mk.ring ? '<span class="ring"></span>' : mk.text ? `<span class="l" style="background:${esc(t.bg)};color:${esc(t.color)}">${esc(mk.text)}</span>` : '';
+        html += `<div class="${cls}" data-mcell="${day.ds}|${esc(staff.id)}"><span class="dn">${day.d}</span>${mark}${c.isRequest ? '<span class="x">×</span>' : ''}${c.note ? '<span class="nd"></span>' : ''}</div>`;
+      });
+      const tail = (7 - (days[0].dow + days.length) % 7) % 7;
+      for (let i = 0; i < tail; i++) html += '<div class="cd blank"></div>';
+      html += `</div><div class="p-sum"><span>公休 <b>${offSum}</b></span><span>勤務 <b>${workSum}</b></span></div></div>`;
+      $('mBody').innerHTML = html;
+    }
+
+    /* ---------- 入力 ---------- */
+    /*
+     * 1回目のクリックでスタンプ、同じセルを素早くもう一度押すと空欄に戻す。
+     * 画面を描き直すとブラウザのdblclickが届かないことがあるため、セルとクリック時刻で自前で判定する。
+     */
+    const DOUBLE_MS = 400;
+    let lastClick = { key: '', at: 0 };
+    let viewMode = 'shift';   // 'shift' 勤務 / 'task' 業務
+    let taskStamp = '';
+    function applyStamp(ds, staffId) {
+      if (!isAdmin) return;
+      const staff = app.staffList.find(s => s.id === staffId);
+      const key = `${ds}_${staffId}`;
+      const now = performance.now();
+
+      if (lastClick.key === key && now - lastClick.at < DOUBLE_MS) {
+        lastClick = { key: '', at: 0 };
+        const last = history[history.length - 1];
+        if (last && last.length === 1 && last[0].key === key) {
+          // 1回目の押印を「元の状態 → 空欄」に置き換える（元に戻すで元の状態に戻れる）
+          if (last[0].prev) delete app.shifts[key];
+          else { history.pop(); delete app.shifts[key]; }
+          updateState();
+        } else if (app.shifts[key]) {
+          pushHistory([{ key, prev: { ...app.shifts[key] } }]);
+          delete app.shifts[key];
+        }
+        render();
+        return;
+      }
+      lastClick = { key, at: now };
+
+      const prev = app.shifts[key] ? { ...app.shifts[key] } : undefined;
+      app.shifts[key] = { ...cellData(ds, staff), date: ds, staffId, type: stamp, customTime: '', isRequest: $('reqToggle').checked, auto: false, unknown: false, rawText: '' };
+      pushHistory([{ key, prev }]);
+      render();
+    }
+    function pushHistory(entries) { history.push(entries); updateState(); }
+    function undo() {
+      const entries = history.pop();
+      if (!entries) return;
+      entries.slice().reverse().forEach(({ key, prev }) => {
+        if (key.startsWith('ev:')) { const ds = key.slice(3); if (prev) app.events[ds] = prev; else delete app.events[ds]; }
+        else if (key.startsWith('tk:')) { const k = key.slice(3); setTasks(k.slice(0, 10), k.slice(11), prev ? prev.slice() : []); }
+        else if (prev) app.shifts[key] = prev; else delete app.shifts[key];
+      });
+      updateState();
+      render();
+    }
+    function updateState() {
+      const n = new Set(history.flat().map(e => e.key)).size;
+      const el = $('saveState');
+      el.textContent = n ? `未保存 ${n}件` : (el.dataset.saved || '');
+      el.className = 'state' + (n ? ' dirty' : '');
+      $('undoBtn').disabled = !history.length;
+      if ($('mUndo')) $('mUndo').disabled = !history.length;
+    }
+    /** 定休日で空欄の日を公休にする（名前を選んでいればその人だけ） */
+    function fillFixed() {
+      const one = paletteStaff ? app.staffList.find(s => s.id === paletteStaff) : null;
+      const targets = (one ? [one] : displayStaff()).filter(s => s.status === '在籍' && s.fixedOff);
+      if (!targets.length) { toast('定休日が設定されている人がいません（スタッフ設定で設定できます）', true); return; }
+      const entries = [];
+      getDays().forEach(day => targets.forEach(s => {
+        const key = `${day.ds}_${s.id}`;
+        if (!isFixedOff(s, day) || app.shifts[key]) return;
+        entries.push({ key, prev: undefined });
+        app.shifts[key] = { date: day.ds, staffId: s.id, type: 'OFF', isRequest: false, customTime: '', note: '', auto: false };
+      }));
+      if (!entries.length) { toast('入れられる空欄はありませんでした'); return; }
+      pushHistory(entries);
+      render();
+      toast(`${targets.map(s => s.name).join('、')}さんの定休日 ${entries.length}件を公休にしました`);
+    }
+
+    /* セル詳細 */
+    function openCell(ds, staffId) {
+      if (!isAdmin || $('cellDlg').open) return;
+      const staff = app.staffList.find(s => s.id === staffId);
+      const c = cellData(ds, staff);
+      const day = dayOf(ds);
+      editing = { ds, staffId };
+      editingType = c.type;
+      $('cellTitle').textContent = `${day.d}日(${WEEK[day.dow]})　${staff.name}さん`;
+
+      const choices = [];
+      const pA = parsePattern(staff.patA);
+      choices.push(['WORK', pA.label || '日勤', pA.time]);
+      if (staff.specialTask) { const p = parsePattern(staff.specialTask); choices.push(['SPECIAL', '〇' + (p.label || '特別業務'), p.time]); }
+      [['PAT_B', staff.patB], ['PAT_C', staff.patC], ['PAT_D', staff.patD]].forEach(([code, v]) => {
+        const p = parsePattern(v);
+        if (p.time) choices.push([code, p.label || code, p.time]);
+      });
+      if (!choices.some(x => x[0] === c.type) && typeMap[c.type] && !isRestType(typeMap[c.type])) choices.push([c.type, typeMap[c.type].label, '']);
+      app.shiftTypes.filter(isRestType).forEach(t => choices.push([t.code, t.label, '']));
+      $('cellChoices').innerHTML = choices.map(([code, label, time]) =>
+        `<button type="button" class="choice${code === c.type ? ' on' : ''}" data-type="${esc(code)}">${esc(label)}${time ? `<small>${esc(shortTime(time))}</small>` : ''}</button>`).join('');
+
+      const tlist = tasksForRole(staff.role);
+      $('cellTaskField').hidden = !tlist.length;
+      const curT = tasksOf(ds, staffId);
+      $('cellTasks').innerHTML = tlist.map(t => `<button type="button" class="choice${curT.includes(t.name) ? ' on' : ''}" data-tname="${esc(t.name)}">${chip(t)} ${esc(t.name)}</button>`).join('');
+
+      $('cellTime').value = c.customTime || '';
+      $('cellReq').checked = c.isRequest;
+      $('cellNote').value = c.note || '';
+      $('cellDlg').returnValue = '';
+      $('cellDlg').showModal();
+    }
+    function commitCell(clear) {
+      if (!editing) return;
+      const { ds, staffId } = editing;
+      const key = `${ds}_${staffId}`;
+      const prev = app.shifts[key] ? { ...app.shifts[key] } : undefined;
+      if (clear) delete app.shifts[key];
+      else app.shifts[key] = { date: ds, staffId, type: editingType, isRequest: $('cellReq').checked, customTime: $('cellTime').value.trim(), note: $('cellNote').value.trim(), auto: false };
+      const entries = [{ key, prev }];
+      if (!$('cellTaskField').hidden) {
+        const before = tasksOf(ds, staffId).slice();
+        const after = [...$('cellTasks').querySelectorAll('.choice.on')].map(b => b.dataset.tname);
+        if (before.join('|') !== after.join('|')) {
+          entries.push({ key: `tk:${ds}_${staffId}`, prev: before.length ? before : undefined });
+          setTasks(ds, staffId, after);
+        }
+      }
+      pushHistory(entries);
+      editing = null;
+      render();
+    }
+
+    /* 全体予定 */
+    function openEvent(ds) {
+      if (!isAdmin) return;
+      editingEvent = ds;
+      const day = dayOf(ds);
+      $('eventTitle').textContent = `${day.d}日(${WEEK[day.dow]})の全体予定`;
+      $('eventText').value = app.events[ds] || '';
+      $('eventDlg').returnValue = '';
+      $('eventDlg').showModal();
+    }
+    function commitEvent() {
+      const ds = editingEvent;
+      const val = $('eventText').value.trim();
+      const prev = app.events[ds];
+      if ((prev || '') === val) return;
+      if (val) app.events[ds] = val; else delete app.events[ds];
+      pushHistory([{ key: 'ev:' + ds, prev }]);
+      render();
+    }
+
+    /* ---------- 保存 ---------- */
+    /** 変更したセルだけを、読み込んだ時点の内容と一緒に送る（シート側の変更とぶつかったら上書きしない） */
+    function buildChanges() {
+      const keys = new Set(history.flat().map(e => e.key));
+      const raw = app.raw || {}, evRaw = app.evRaw || {};
+      const changes = [], evChanges = [], taskChanges = [];
+      const taskDates = new Set();
+      keys.forEach(k => {
+        if (k.startsWith('tk:')) { taskDates.add(k.slice(3, 13)); return; }
+        if (k.startsWith('ev:')) {
+          const ds = k.slice(3);
+          const base = evRaw[ds] || '';
+          const text = app.events[ds] || '';
+          if (base.trim() !== text.trim()) evChanges.push({ date: ds, base, text });
+          return;
+        }
+        const b = raw[k] || { text: '', note: '' };
+        changes.push({ key: k, baseText: b.text || '', baseNote: b.note || '', cell: app.shifts[k] || null });
+      });
+      taskDates.forEach(ds => (app.tasks || []).forEach(t => {
+        const ids = app.staffList.filter(s => tasksOf(ds, s.id).includes(t.name)).map(s => s.id);
+        const text = app.staffList.filter(s => ids.includes(s.id)).map(s => s.name).join('・');
+        const base = (app.taskRaw || {})[`${ds}|${t.name}`] || '';
+        if (text !== base) taskChanges.push({ date: ds, task: t.name, base, ids });
+      }));
+      return { changes, evChanges, taskChanges };
+    }
+
+    function save() {
+      if (!history.length) { toast('保存する変更はありません'); return; }
+      const btn = $('saveBtn');
+      btn.disabled = true;
+      btn.textContent = '保存中…';
+      const { changes, evChanges, taskChanges } = buildChanges();
+      google.script.run
+        .withSuccessHandler(res => {
+          history = [];
+          $('saveState').dataset.saved = `${res.savedAt} 保存済み`;
+          updateState();
+          btn.disabled = false;
+          btn.textContent = '保存';
+          load(ym, false, true);
+          if (res.conflicts && res.conflicts.length) {
+            $('conflictBody').innerHTML = res.conflicts.map(c =>
+              `<tr><td>${Number(String(c.date).slice(8))}日</td><td>${esc(c.name)}</td><td>${esc(c.current)}</td></tr>`).join('');
+            $('conflictDlg').showModal();
+          } else {
+            toast(`保存しました（${res.saved}件）`);
+          }
+        })
+        .withFailureHandler(err => {
+          btn.disabled = false;
+          btn.textContent = '保存';
+          toast(`保存できませんでした。${err.message}`, true);
+        })
+        .saveMonthShiftData(ym, changes, evChanges, taskChanges, AUTH);
+    }
+
+    /* ---------- 日報プレビュー ---------- */
+    function openDaily(ds) {
+      const day = dayOf(ds);
+      const staffs = visibleStaff();
+      const c = counts(day, staffs);
+      const working = [], off = [];
+      staffs.forEach(s => {
+        const cell = cellData(ds, s);
+        const t = typeMap[cell.type] || typeMap.WORK;
+        const r = resolve(s, day.rest, cell);
+        const label = typeLabel(cell, r, t);
+        (OFF_CODES.includes(cell.type) ? off : working).push({ s, cell, r, label });
+      });
+      $('dailyTitle').textContent = `${day.d}日(${WEEK[day.dow]})の日報データ`;
+      const chips = [`<span class="chip">${day.rest ? '休日' : '平日'}</span>`];
+      if (day.holiday) chips.push(`<span class="chip hol">${esc(day.holiday)}</span>`);
+      if (app.events[ds]) chips.push(`<span class="chip ev">${esc(app.events[ds])}</span>`);
+      const box = (label, n, role) => `<div class="${n < minFor(role, day.rest) ? 'low' : ''}">${label}<b>${n}人</b></div>`;
+      let html = `<div class="preview-meta">${chips.join('')}</div>
+        <div class="cover">${box('技士 午前', c.ce.am, '臨床工学技士')}${box('技士 午後', c.ce.pm, '臨床工学技士')}${box('サポ 午前', c.sp.am, 'MEサポーター')}${box('サポ 午後', c.sp.pm, 'MEサポーター')}</div>
+        ${taskSummaryHtml(day, 'border:1px solid var(--line);border-radius:6px;margin-bottom:10px')}
+        <table class="list"><thead><tr><th>氏名</th><th>職種</th><th>勤務</th><th>時間</th><th>業務</th><th>メモ</th></tr></thead><tbody>`;
+      working.forEach(({ s, cell, r, label }) => {
+        html += `<tr><td><b>${esc(s.name)}</b></td><td>${esc(s.role)}</td><td style="color:${r.isSpecialTask ? 'var(--shuin)' : 'inherit'}">${esc(label)}</td>
+          <td>${esc(r.halfDay ? (r.halfDay === 'AM' ? '午前' : '午後') : r.workTime)}</td><td>${tasksOf(ds, s.id).map(n => taskFor(n)).filter(Boolean).map(chip).join('')}</td><td>${esc(cell.note)}</td></tr>`;
+      });
+      if (!working.length) html += '<tr><td colspan="6">出勤者はいません</td></tr>';
+      html += '</tbody></table>';
+      if (off.length) {
+        html += `<details class="offs"><summary>休み ${off.length}人<span class="names">${esc(off.map(o => o.s.name).join('、'))}</span></summary>
+          <table class="list"><tbody>${off.map(o => `<tr><td><b>${esc(o.s.name)}</b></td><td>${esc(o.s.role)}</td><td>${esc(o.label)}${o.cell.isRequest ? '（希望）' : ''}</td><td>${esc(o.cell.note)}</td></tr>`).join('')}</tbody></table></details>`;
+      }
+      $('dailyBody').innerHTML = html;
+      $('dailyDlg').showModal();
+    }
+
+    /* ---------- スタッフ設定 ---------- */
+    function openStaff() {
+      staffDraft = JSON.parse(JSON.stringify(app.staffList));
+      renderStaffRows();
+      $('staffDlg').showModal();
+    }
+    function renderStaffRows() {
+      const opt = (v, cur) => `<option value="${esc(v[0])}"${v[0] === cur ? ' selected' : ''}>${esc(v[1])}</option>`;
+      $('staffBody').innerHTML = staffDraft.map((s, i) => `
+        <tr class="${s.status === '退職' ? 'retired' : ''}">
+          <td><input class="w-name" data-i="${i}" data-f="name" value="${esc(s.name)}"></td>
+          <td><select data-i="${i}" data-f="role">${[['臨床工学技士', '臨床工学技士'], ['MEサポーター', 'MEサポーター']].map(v => opt(v, s.role)).join('')}</select></td>
+          <td><input class="w-spec" data-i="${i}" data-f="specialTask" value="${esc(s.specialTask)}" placeholder="病棟回収:08:30-16:30"></td>
+          <td><input class="w-pat" data-i="${i}" data-f="patA" value="${esc(s.patA)}" placeholder="通常:08:30-17:00"></td>
+          <td><input class="w-pat" data-i="${i}" data-f="patB" value="${esc(s.patB)}" placeholder="早出:07:30-16:00"></td>
+          <td><input class="w-pat" data-i="${i}" data-f="patC" value="${esc(s.patC)}" placeholder="休日:08:30-12:30"></td>
+          <td><input class="w-pat" data-i="${i}" data-f="patD" value="${esc(s.patD)}" placeholder="遅出:09:00-17:00"></td>
+          <td><select data-i="${i}" data-f="weekendPat">${[['A', 'Aのまま'], ['B', 'Bを使う'], ['C', 'Cを使う'], ['D', 'Dを使う']].map(v => opt(v, s.weekendPat)).join('')}</select></td>
+          <td style="white-space:nowrap">${FIXED_DAYS.map(d => `<button type="button" class="fx${String(s.fixedOff || '').includes(d) ? ' on' : ''}" data-fx="${i}" data-d="${d}">${d}</button>`).join('')}</td>
+          <td><select data-i="${i}" data-f="status">${[['在籍', '在籍'], ['育休中', '育休中'], ['退職', '退職']].map(v => opt(v, s.status)).join('')}</select></td>
+          <td style="white-space:nowrap"><button class="icon-btn" data-move="${i}" data-dir="-1" aria-label="上へ">↑</button> <button class="icon-btn" data-move="${i}" data-dir="1" aria-label="下へ">↓</button></td>
+        </tr>`).join('');
+    }
+    function saveStaff() {
+      const bad = staffDraft.filter(s => [s.patA, s.patB, s.patC, s.patD, s.specialTask].some(v => v && !parsePattern(v).time && /\d/.test(v)));
+      if (bad.length && !confirm(`${bad.map(s => s.name).join('、')}さんのパターンに、時間として読めない入力があります。このまま保存しますか？`)) return;
+      const btn = $('saveStaff');
+      btn.disabled = true;
+      google.script.run
+        .withSuccessHandler(() => { btn.disabled = false; $('staffDlg').close(); toast('スタッフ設定を保存しました'); load(ym, true); })
+        .withFailureHandler(err => { btn.disabled = false; toast(`スタッフ設定を保存できませんでした。${err.message}`, true); })
+        .saveStaffMaster(staffDraft, AUTH);
+    }
+
+    /* ---------- 自動割り振り ---------- */
+    let autoResult = null;
+    function openAuto() {
+      const cfg = app.autoSettings || {};
+      $('autoTitle').textContent = `自動割り振り（${Number(ym.slice(5))}月）`;
+      $('autoForm').innerHTML = ROLES.map((role, i) => {
+        const c = cfg[role] || {};
+        const n = visibleStaff().filter(s => s.role === role && s.status === '在籍').length;
+        const row = (key, label, unit, step) => `<div class="auto-row"><span>${label}</span><span><input type="number" inputmode="decimal" min="0" max="31" step="${step}" id="auto_${i}_${key}" value="${esc(c[key] ?? 0)}"><span class="unit">${unit}</span></span></div>`;
+        return `<div class="auto-card" id="autoCard${i}">
+          <h3><input type="checkbox" id="auto_${i}_on" checked>${esc(role)}<span class="unit" style="font-weight:400;color:var(--muted)">在籍 ${n}人</span></h3>
+          ${row('off', '公休数（1人あたり）', '日', 1)}
+          ${row('paid', '有休数（1人あたり）', '日', 1)}
+          ${row('minWeekday', '平日の最低出勤', '人', 1)}
+          ${row('minRest', '休日の最低出勤', '人', 1)}
+        </div>`;
+      }).join('');
+      $('autoResult').innerHTML = '';
+      $('autoApply').hidden = true;
+      autoResult = null;
+      $('autoDlg').showModal();
+    }
+    function readAutoForm() {
+      const cfg = {}, roles = [];
+      ROLES.forEach((role, i) => {
+        const g = k => Math.max(0, Number($(`auto_${i}_${k}`).value) || 0);
+        cfg[role] = { off: g('off'), paid: g('paid'), minWeekday: g('minWeekday'), minRest: g('minRest') };
+        if ($(`auto_${i}_on`).checked) roles.push(role);
+      });
+      return { cfg, roles, redo: $('autoRedo').checked, fixed: $('autoFixed').checked };
+    }
+
+    /**
+     * 割り振りの計算（AIは使わない決まった手順）
+     *  1. 希望休・手入力・前回の自動以外はそのまま固定
+     *  2. 公休が足りない人から順に1日ずつ、全員で順番に取っていく（偏らないように1巡ずつ）
+     *  3. 取る日は「その日休んでも最低人数を割らない日」の中から、
+     *     余裕が大きい日・自分の休みから離れた日・（公休は）休日、（有休は）平日を優先。
+     *     休日の公休は、全員の平均より少ない人ほど優先して取れる
+     */
+    function planAuto(opt) {
+      const { cfg, roles, redo } = opt;
+      const days = getDays();
+      const all = visibleStaff();
+      const base = { ...app.shifts };
+      const removed = [];
+      if (redo) {
+        Object.keys(base).forEach(k => {
+          const v = base[k];
+          const st = all.find(x => x.id === v.staffId);
+          if (v.auto && st && roles.includes(st.role)) { delete base[k]; removed.push(k); }
+        });
+      }
+      const plan = {};
+      const cellAt = (ds, st) => plan[`${ds}_${st.id}`] || base[`${ds}_${st.id}`] ||
+        { date: ds, staffId: st.id, type: st.status === '育休中' ? 'CHILDCARE' : 'WORK', isRequest: false, customTime: '', note: '' };
+      const isFree = (ds, st) => !plan[`${ds}_${st.id}`] && !base[`${ds}_${st.id}`];
+      const report = [];
+      const warnings = [];
+      // 定休日（スタッフ設定）は先に公休で埋める
+      let fixedCount = 0;
+      if (opt.fixed) {
+        all.filter(st => roles.includes(st.role) && st.status === '在籍').forEach(st => days.forEach(day => {
+          if (isFixedOff(st, day) && isFree(day.ds, st)) {
+            plan[`${day.ds}_${st.id}`] = { date: day.ds, staffId: st.id, type: 'OFF', isRequest: false, customTime: '', note: '', auto: false };
+            fixedCount++;
+          }
+        }));
+      }
+
+      roles.forEach(role => {
+        const c = cfg[role];
+        const members = all.filter(x => x.role === role);
+        const targets = members.filter(x => x.status === '在籍');
+        if (!targets.length) return;
+        const minOf = day => day.rest ? c.minRest : c.minWeekday;
+        const cov = (day, st) => { const x = cellAt(day.ds, st); const rr = resolve(st, day.rest, x); return coverage(x.type, rr.workTime, rr.offTime); };
+        const headWithout = (day, without) => {
+          let am = 0, pm = 0;
+          members.forEach(m => { if (m === without) return; const v = cov(day, m); if (v.am) am++; if (v.pm) pm++; });
+          return Math.min(am, pm);
+        };
+        const restingAt = (i, st) => i >= 0 && i < days.length && OFF_CODES.includes(cellAt(days[i].ds, st).type);
+        const sum = (st, fn) => days.reduce((n, d) => n + fn(cellAt(d.ds, st).type, d), 0);
+        const offOf = st => sum(st, t => t === 'OFF' ? 1 : (t === 'AM_OFF' || t === 'PM_OFF') ? 0.5 : 0);
+        const paidOf = st => sum(st, t => t === 'PAID' ? 1 : (t === 'AM_PAID' || t === 'PM_PAID') ? 0.5 : 0);
+        const restOffOf = st => sum(st, (t, d) => d.rest && OFF_CODES.includes(t) ? 1 : 0);
+        const before = new Map(targets.map(st => [st.id, { off: offOf(st), paid: paidOf(st) }]));
+        const unmet = new Map(targets.map(st => [st.id, { off: 0, paid: 0 }]));
+
+        const assign = (type, needOf, preferRest) => {
+          const need = new Map(targets.map(st => [st.id, Math.max(0, Math.floor(needOf(st)))]));
+          const stuck = new Set();
+          for (let round = 0; round < 62; round++) {
+            const order = targets.filter(st => need.get(st.id) > 0 && !stuck.has(st.id))
+              .sort((a, b) => need.get(b.id) - need.get(a.id) || a.order - b.order);
+            if (!order.length) break;
+            order.forEach(st => {
+              const avgRest = targets.reduce((n, t) => n + restOffOf(t), 0) / targets.length;
+              const myRest = restOffOf(st);
+              let best = null, bestScore = -Infinity;
+              days.forEach((day, i) => {
+                if (!isFree(day.ds, st)) return;
+                const slack = headWithout(day, st) - minOf(day);
+                if (slack < 0) return;
+                let dist = 7;
+                for (let k = 1; k < 7; k++) if (restingAt(i - k, st) || restingAt(i + k, st)) { dist = k; break; }
+                let score = Math.min(slack, 3) * 3 + dist * 2;
+                if (preferRest) { if (day.rest) score += 3 + (avgRest - myRest) * 4; }
+                else if (day.rest) score -= 8;
+                if (score > bestScore) { bestScore = score; best = day; }
+              });
+              if (!best) { stuck.add(st.id); return; }
+              plan[`${best.ds}_${st.id}`] = { date: best.ds, staffId: st.id, type, isRequest: false, customTime: '', note: '', auto: true };
+              need.set(st.id, need.get(st.id) - 1);
+            });
+          }
+          need.forEach((n, id) => { if (n > 0) unmet.get(id)[type === 'OFF' ? 'off' : 'paid'] = n; });
+        };
+        assign('OFF', st => c.off - offOf(st), true);
+        assign('PAID', st => c.paid - paidOf(st), false);
+
+        report.push({
+          role,
+          rows: targets.map(st => ({
+            name: st.name,
+            offBefore: before.get(st.id).off, off: offOf(st),
+            paidBefore: before.get(st.id).paid, paid: paidOf(st),
+            restOff: restOffOf(st), unmet: unmet.get(st.id)
+          }))
+        });
+        days.forEach(day => {
+          const head = headWithout(day, null);
+          if (head < minOf(day)) warnings.push(`${day.d}日(${WEEK[day.dow]}) ${role}が${head}人（最低${minOf(day)}人）`);
+        });
+      });
+      return { plan, removed, report, warnings, fixedCount };
+    }
+
+    function calcAuto() {
+      const opt = readAutoForm();
+      if (!opt.roles.length) { toast('職種を1つ以上選んでください', true); return; }
+      autoResult = planAuto(opt);
+      autoResult.opt = opt;
+      const added = Object.keys(autoResult.plan).length;
+      let html = '';
+      autoResult.report.forEach(r => {
+        html += `<h4>${esc(r.role)}</h4><table class="list"><thead><tr><th>氏名</th><th class="num">公休</th><th class="num">有休</th><th class="num">うち休日の休み</th><th>足りない分</th></tr></thead><tbody>`;
+        r.rows.forEach(x => {
+          const lack = [x.unmet.off ? `公休 ${x.unmet.off}日` : '', x.unmet.paid ? `有休 ${x.unmet.paid}日` : ''].filter(Boolean).join('、');
+          html += `<tr><td><b>${esc(x.name)}</b></td>
+            <td class="num">${x.off}${x.off !== x.offBefore ? `<span class="unit">（+${x.off - x.offBefore}）</span>` : ''}</td>
+            <td class="num">${x.paid}${x.paid !== x.paidBefore ? `<span class="unit">（+${x.paid - x.paidBefore}）</span>` : ''}</td>
+            <td class="num">${x.restOff}</td><td class="${lack ? 'unmet' : ''}">${lack || '—'}</td></tr>`;
+        });
+        html += '</tbody></table>';
+      });
+      if (autoResult.warnings.length) {
+        html += `<div class="warns"><b>最低人数を下回る日があります</b>（希望休や手入力が原因の場合は、自動では解消できません）<br>${autoResult.warnings.map(esc).join('<br>')}</div>`;
+      } else {
+        html += `<div class="ok">すべての日で最低出勤人数を満たしています。新しく ${added} 件の休みを割り振ります${autoResult.fixedCount ? `（うち定休日 ${autoResult.fixedCount}件）` : ''}。</div>`;
+      }
+      if (autoResult.report.some(r => r.rows.some(x => x.unmet.off || x.unmet.paid))) {
+        html += '<p class="help" style="margin-top:8px">「足りない分」は、最低出勤人数を守ると入れられなかった日数です。人数の設定を見直すか、手で調整してください。</p>';
+      }
+      $('autoResult').innerHTML = html;
+      $('autoApply').hidden = false;
+      $('autoApply').textContent = autoResult.removed.length ? `表に反映する（${added}件・前回分 ${autoResult.removed.length}件を置き換え）` : `表に反映する（${added}件）`;
+    }
+
+    function applyAuto() {
+      if (!autoResult) return;
+      const { plan, removed, opt } = autoResult;
+      const keys = new Set([...removed, ...Object.keys(plan)]);
+      const entries = [];
+      keys.forEach(k => {
+        entries.push({ key: k, prev: app.shifts[k] ? { ...app.shifts[k] } : undefined });
+        if (plan[k]) app.shifts[k] = plan[k]; else delete app.shifts[k];
+      });
+      if (entries.length) pushHistory(entries);
+      app.autoSettings = opt.cfg;
+      google.script.run.withFailureHandler(err => toast(`設定を保存できませんでした。${err.message}`, true)).saveAutoSettings(opt.cfg, AUTH);
+      $('autoDlg').close();
+      render();
+      toast('割り振りました。内容を確認して「保存」を押してください');
+    }
+
+    function saveAutoCfgOnly() {
+      const { cfg } = readAutoForm();
+      google.script.run
+        .withSuccessHandler(() => { app.autoSettings = cfg; render(); toast('設定を保存しました'); })
+        .withFailureHandler(err => toast(`設定を保存できませんでした。${err.message}`, true))
+        .saveAutoSettings(cfg, AUTH);
+    }
+
+    /* ---------- 表示する人 ---------- */
+    function openFilter() {
+      const vs = visibleStaff();
+      let html = '', prevRole = null;
+      vs.forEach(s => {
+        if (s.role !== prevRole) {
+          if (prevRole !== null) html += '</div>';
+          html += `<div class="pick-group">${esc(s.role)}</div><div class="pick-list">`;
+          prevRole = s.role;
+        }
+        const checked = !shownIds || shownIds.has(s.id);
+        html += `<label class="pick"><input type="checkbox" value="${esc(s.id)}" data-role="${esc(s.role)}"${checked ? ' checked' : ''}>${esc(s.name)}${s.status !== '在籍' ? `<small>${esc(s.status)}</small>` : ''}</label>`;
+      });
+      if (prevRole !== null) html += '</div>';
+      $('pickBody').innerHTML = html;
+      $('filterDlg').showModal();
+    }
+    function applyFilter() {
+      const boxes = [...$('pickBody').querySelectorAll('input[type=checkbox]')];
+      const ids = boxes.filter(b => b.checked).map(b => b.value);
+      if (!ids.length) { toast('1人以上選んでください', true); return; }
+      shownIds = ids.length === boxes.length ? null : new Set(ids);
+      try { shownIds ? localStorage.setItem(FILTER_KEY, JSON.stringify([...shownIds])) : localStorage.removeItem(FILTER_KEY); } catch (e) { /* 保存できなくても表示は切り替える */ }
+      if (paletteStaff && shownIds && !shownIds.has(paletteStaff)) paletteStaff = null;
+      if (!displayStaff().some(s => s.id === mStaff)) mStaff = displayStaff()[0] ? displayStaff()[0].id : '';
+      $('filterDlg').close();
+      render();
+    }
+
+    /* ---------- CSV出力 ---------- */
+    function openCsv() {
+      const n = displayStaff().length, all = visibleStaff().length;
+      $('csvShownText').textContent = n < all ? `${n}人（${displayStaff().map(s => s.name).join('、')}）` : `${n}人（全員）`;
+      $('csvDlg').showModal();
+    }
+    const csvCell = v => { const t = String(v == null ? '' : v); return /[",\r\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
+    function downloadCsv(name, rows) {
+      const csv = '\ufeff' + rows.map(r => r.map(csvCell).join(',')).join('\r\n');
+      const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+      const a = document.createElement('a');
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    }
+    function cellText(c, r, t) {
+      let text = c.type === 'SPECIAL' ? '〇' + r.specialTaskName
+        : (r.kind === 'default' || r.kind === 'rest-default') ? '' : typeLabel(c, r, t);
+      if (r.kind === 'custom') text += ' ' + r.workTime;
+      if (c.isRequest) text += '(希望)';
+      if (c.note) text += (text ? '／' : '') + c.note;
+      return text;
+    }
+    function exportCsv() {
+      const kind = document.querySelector('input[name=csvKind]:checked').value;
+      const who = document.querySelector('input[name=csvWho]:checked').value;
+      const staffs = who === 'all' ? visibleStaff() : displayStaff();
+      const days = getDays();
+      const rows = [];
+
+      if (kind === 'grid') {
+        rows.push([`${ym.replace('-', '年')}月 勤務表`]);
+        rows.push(['職種', '氏名', ...days.map(d => `${d.d}(${WEEK[d.dow]})`), '公休', '勤務']);
+        rows.push(['', '祝日・休日', ...days.map(d => d.holiday ? (d.rest ? d.holiday : `${d.holiday}(診療日)`) : (d.rest ? '休日' : '')), '', '']);
+        staffs.forEach(s => {
+          let offSum = 0, workSum = 0;
+          const cells = days.map(day => {
+            const c = cellData(day.ds, s);
+            const t = typeMap[c.type] || typeMap.WORK;
+            offSum += t.offVal;
+            workSum += c.type === 'CHILDCARE' ? 0 : t.workVal;
+            return cellText(c, resolve(s, day.rest, c), t);
+          });
+          rows.push([s.role, s.name, ...cells, offSum, workSum]);
+        });
+        const cnts = days.map(d => counts(d, visibleStaff()));
+        rows.push([]);
+        rows.push(['集計', '技士 午前', ...cnts.map(c => c.ce.am), '', '']);
+        rows.push(['集計', '技士 午後', ...cnts.map(c => c.ce.pm), '', '']);
+        rows.push(['集計', 'サポーター 午前', ...cnts.map(c => c.sp.am), '', '']);
+        rows.push(['集計', 'サポーター 午後', ...cnts.map(c => c.sp.pm), '', '']);
+        rows.push(['集計', '〇特別業務', ...cnts.map(c => c.special), '', '']);
+        rows.push(['予定', '全体予定', ...days.map(d => app.events[d.ds] || ''), '', '']);
+        (app.tasks || []).forEach(t => rows.push(['業務', t.name, ...days.map(d => visibleStaff().filter(x => tasksOf(d.ds, x.id).includes(t.name)).map(x => x.name).join('・')), '', '']));
+      } else {
+        rows.push(['日付', '曜日', '祝日', '休日', 'スタッフID', '氏名', '職種', '区分コード', '勤務', '開始', '終了', '半日', '希望休', '特別業務', '業務', 'メモ', '全体予定']);
+        days.forEach(day => staffs.forEach(s => {
+          const c = cellData(day.ds, s);
+          const t = typeMap[c.type] || typeMap.WORK;
+          const r = resolve(s, day.rest, c);
+          const m = String(r.workTime).match(/(\d{1,2}:\d{2})-(\d{1,2}:\d{2})/);
+          const label = typeLabel(c, r, t);
+          rows.push([day.ds, WEEK[day.dow], day.holiday, day.rest ? '休日' : '平日', s.id, s.name, s.role, c.type, label,
+            r.kind === 'off' || r.halfDay || !m ? '' : m[1], r.kind === 'off' || r.halfDay || !m ? '' : m[2], r.halfDay === 'AM' ? '午前' : r.halfDay === 'PM' ? '午後' : '',
+            c.isRequest ? '○' : '', r.specialTaskName, tasksOf(day.ds, s.id).join('・'), c.note, app.events[day.ds] || '']);
+        }));
+      }
+      const suffix = kind === 'grid' ? '勤務表' : '明細';
+      const part = who === 'all' || staffs.length === visibleStaff().length ? '' : `_${staffs.length}人`;
+      downloadCsv(`MEシフト_${ym}_${suffix}${part}.csv`, rows);
+      $('csvDlg').close();
+      toast('CSVをダウンロードしました');
+    }
+
+    /* ---------- 共通 ---------- */
+    let toastTimer = null;
+    function toast(msg, isError) {
+      const el = $('toast');
+      el.textContent = msg;
+      el.className = 'toast show' + (isError ? ' error' : '');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { el.className = 'toast'; }, isError ? 6000 : 2400);
+    }
+
+    /* ---------- イベント登録 ---------- */
+    window.addEventListener('DOMContentLoaded', () => {
+      $('monthPicker').addEventListener('change', e => goMonth(e.target.value));
+      $('prevMonth').onclick = () => goMonth(addMonth(ym, -1));
+      $('nextMonth').onclick = () => goMonth(addMonth(ym, 1));
+      $('thisMonth').onclick = () => goMonth(thisYm());
+      $('saveBtn').onclick = save;
+      $('undoBtn').onclick = undo;
+      $('autoTaskBtn').onclick = autoTasks;
+      document.querySelectorAll('[data-vmode]').forEach(b => { b.onclick = () => setViewMode(b.dataset.vmode); });
+      $('cellTasks').addEventListener('click', e => {
+        const b = e.target.closest('[data-tname]');
+        if (b) b.classList.toggle('on');
+      });
+      $('fixedBtn').onclick = fillFixed;
+      $('helpBtn').onclick = () => $('helpDlg').showModal();
+      $('filterBtn').onclick = openFilter;
+      $('reloadBtn').onclick = () => reload(false);
+      document.addEventListener('visibilitychange', () => {
+        // シートを見に行って戻ってきたときなど。変更が無ければ自動で最新にする
+        if (document.visibilityState === 'visible' && ym && Date.now() - lastLoadedAt > 20000) reload(true);
+      });
+      $('autoBtn').onclick = openAuto;
+      $('autoCalc').onclick = calcAuto;
+      $('autoApply').onclick = applyAuto;
+      $('autoSaveCfg').onclick = saveAutoCfgOnly;
+      $('autoForm').addEventListener('input', e => {
+        $('autoApply').hidden = true;
+        if (e.target.id.endsWith('_on')) e.target.closest('.auto-card').classList.toggle('off', !e.target.checked);
+      });
+      $('autoRedo').addEventListener('change', () => { $('autoApply').hidden = true; });
+      $('autoFixed').addEventListener('change', () => { $('autoApply').hidden = true; });
+      $('applyFilter').onclick = applyFilter;
+      $('csvBtn').onclick = openCsv;
+      $('doCsv').onclick = exportCsv;
+      $('filterDlg').addEventListener('click', e => {
+        const q = e.target.closest('[data-quick]');
+        if (!q) return;
+        $('pickBody').querySelectorAll('input[type=checkbox]').forEach(b => {
+          b.checked = q.dataset.quick === 'all' ? true : q.dataset.quick === 'none' ? false : b.dataset.role === q.dataset.quick;
+        });
+      });
+      $('openStaff').onclick = openStaff;
+      $('saveStaff').onclick = saveStaff;
+      $('addStaff').onclick = () => {
+        staffDraft.push({ id: '', name: '', role: 'MEサポーター', status: '在籍', patA: '通常:08:30-17:00', patB: '', patC: '', patD: '', weekendPat: 'A', specialTask: '', fixedOff: '' });
+        renderStaffRows();
+        const inputs = $('staffBody').querySelectorAll('input[data-f="name"]');
+        inputs[inputs.length - 1].focus();
+      };
+
+      $('palette').addEventListener('click', e => {
+        if (e.target.closest('[data-unselect]')) { togglePaletteStaff(paletteStaff); return; }
+        if (e.target.closest('[data-rest-toggle]')) { restOpen = !restOpen; renderPalette(); return; }
+        const tb = e.target.closest('[data-task]');
+        if (tb) { taskStamp = tb.dataset.task; renderPalette(); return; }
+        const b = e.target.closest('[data-code]');
+        if (!b) return;
+        stamp = b.dataset.code;
+        restOpen = false;
+        renderPalette();
+      });
+      document.addEventListener('click', e => {
+        if (restOpen && !e.target.closest('.rest-menu')) { restOpen = false; renderPalette(); }
+      });
+
+      const grid = $('grid');
+      grid.addEventListener('click', e => {
+        const cell = e.target.closest('td.cell');
+        if (cell) { if (viewMode === 'task') toggleTask(cell.dataset.date, cell.dataset.staff); else applyStamp(cell.dataset.date, cell.dataset.staff); return; }
+        const day = e.target.closest('th.day');
+        if (day) { openDaily(day.dataset.date); return; }
+        const nm = e.target.closest('th.staff-name');
+        if (nm) { if (isAdmin && viewMode !== 'task') togglePaletteStaff(nm.dataset.staff); return; }
+        const ev = e.target.closest('td[data-event]');
+        if (ev) openEvent(ev.dataset.event);
+      });
+      grid.addEventListener('contextmenu', e => {
+        const cell = e.target.closest('td.cell');
+        if (!cell) return;
+        e.preventDefault();
+        openCell(cell.dataset.date, cell.dataset.staff);
+      });
+
+      $('mView').addEventListener('click', e => {
+        const tab = e.target.closest('[data-mview]');
+        if (tab) { mView = tab.dataset.mview; renderMobile(); return; }
+        const d = e.target.closest('[data-mdate]');
+        if (d) { mDate = d.dataset.mdate; mDateChanged = true; renderMobile(); return; }
+        const st = e.target.closest('[data-mstaff]');
+        if (st) { mStaff = st.dataset.mstaff; renderMobile(); return; }
+        const ev = e.target.closest('[data-event]');
+        if (ev) { openEvent(ev.dataset.event); return; }
+        const mc = e.target.closest('[data-mcell]');
+        if (!mc) return;
+        if (suppressTap) { suppressTap = false; return; }
+        const [ds, id] = mc.dataset.mcell.split('|');
+        if (!isAdmin) {
+          // 閲覧用：人ごとの日付を押すと、その日の一覧へ
+          if (mView === 'person') { mView = 'day'; mDate = ds; mDateChanged = true; renderMobile(); }
+          return;
+        }
+        if (mStamping) { lastTapped = mc.dataset.mcell; applyStamp(ds, id); }
+        else openCell(ds, id);
+      });
+      $('mBody').addEventListener('toggle', e => {
+        if (e.target.tagName === 'DETAILS' && e.target.hasAttribute('data-moffs')) mOffOpen = e.target.open;
+      }, true);
+
+      // スタンプ入力中の長押しで詳細
+      let pressTimer = null, suppressTap = false, pressXY = null;
+      $('mBody').addEventListener('pointerdown', e => {
+        const mc = e.target.closest('[data-mcell]');
+        if (!mc || !mStamping) return;
+        pressXY = [e.clientX, e.clientY];
+        pressTimer = setTimeout(() => {
+          suppressTap = true;
+          const [ds, id] = mc.dataset.mcell.split('|');
+          openCell(ds, id);
+        }, 550);
+      });
+      $('mBody').addEventListener('pointermove', e => {
+        if (pressXY && Math.hypot(e.clientX - pressXY[0], e.clientY - pressXY[1]) > 10) clearTimeout(pressTimer);
+      });
+      ['pointerup', 'pointercancel'].forEach(ev => $('mBody').addEventListener(ev, () => { clearTimeout(pressTimer); pressXY = null; }));
+      $('mBody').addEventListener('contextmenu', e => { if (mStamping && e.target.closest('[data-mcell]')) e.preventDefault(); });
+
+      $('mStampToggle').onclick = () => setMobileStamping(!mStamping);
+      $('mStampEnd').onclick = () => setMobileStamping(false);
+      $('mUndo').onclick = undo;
+      $('mReq').addEventListener('change', e => { $('reqToggle').checked = e.target.checked; });
+      $('msbStamps').addEventListener('click', e => {
+        const b = e.target.closest('[data-code]');
+        if (!b) return;
+        stamp = b.dataset.code;
+        renderStampBar();
+      });
+      mq.addEventListener('change', render);
+
+      $('cellChoices').addEventListener('click', e => {
+        const b = e.target.closest('[data-type]');
+        if (!b) return;
+        editingType = b.dataset.type;
+        $('cellChoices').querySelectorAll('.choice').forEach(x => x.classList.toggle('on', x === b));
+        $('cellTime').value = '';
+      });
+      $('cellDlg').addEventListener('close', () => { if ($('cellDlg').returnValue === 'ok') commitCell(false); else editing = null; });
+      $('cellClear').onclick = () => { commitCell(true); $('cellDlg').close('cleared'); };
+      $('eventDlg').addEventListener('close', () => { if ($('eventDlg').returnValue === 'ok') commitEvent(); });
+      document.addEventListener('click', e => { const c = e.target.closest('[data-close]'); if (c) $(c.dataset.close).close(); });
+
+      $('staffBody').addEventListener('input', e => {
+        const el = e.target;
+        if (el.dataset.i == null) return;
+        staffDraft[el.dataset.i][el.dataset.f] = el.value;
+        if (el.dataset.f === 'status') renderStaffRows();
+      });
+      $('staffBody').addEventListener('click', e => {
+        const fx = e.target.closest('[data-fx]');
+        if (fx) {
+          const st = staffDraft[fx.dataset.fx];
+          const set = new Set(String(st.fixedOff || '').split(/[,、\s]+/).filter(Boolean));
+          if (set.has(fx.dataset.d)) set.delete(fx.dataset.d); else set.add(fx.dataset.d);
+          st.fixedOff = FIXED_DAYS.filter(d => set.has(d)).join(',');
+          fx.classList.toggle('on', set.has(fx.dataset.d));
+          return;
+        }
+        const b = e.target.closest('[data-move]');
+        if (!b) return;
+        const i = Number(b.dataset.move), j = i + Number(b.dataset.dir);
+        if (j < 0 || j >= staffDraft.length) return;
+        [staffDraft[i], staffDraft[j]] = [staffDraft[j], staffDraft[i]];
+        renderStaffRows();
+      });
+
+      document.addEventListener('keydown', e => {
+        const k = e.key.toLowerCase();
+        if ((e.ctrlKey || e.metaKey) && k === 'z' && !e.target.closest('input, textarea, dialog')) { e.preventDefault(); undo(); }
+        if (k === 'escape' && restOpen) { restOpen = false; renderPalette(); }
+        if ((e.ctrlKey || e.metaKey) && k === 's') { e.preventDefault(); if (isAdmin && !$('saveBtn').disabled) save(); }
+      });
+      window.addEventListener('beforeunload', e => { if (history.length) { e.preventDefault(); e.returnValue = ''; } });
+
+      load(thisYm());
+    });
+  </script>
+</body>
+</html>
